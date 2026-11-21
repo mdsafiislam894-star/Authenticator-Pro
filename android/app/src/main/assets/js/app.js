@@ -5,8 +5,13 @@ import { APP_VERSION } from './config.js';
 import * as drive from './drive.js';
 import * as sync from './sync.js';
 import { openAddMenu, openScan } from './dialogs-add.js';
-import { openEdit } from './dialogs-manage.js';
-import { openMenu, openSync, openTelegramDialog } from './dialogs-settings.js';
+import { openEdit, openTrash } from './dialogs-manage.js';
+import { openMenu, openSync, openTelegramDialog, openSecurity } from './dialogs-settings.js';
+import { playDropletSound, playSuccessChime, haptic } from './audio.js';
+import {
+  openThemePicker, openSecurityAudit, openFocusView,
+  openPasswordGenerator, openAccountQr, printEmergencySheet
+} from './dialogs-advanced.js';
 
 // ---------- state ----------
 let vault = loadVault();
@@ -16,6 +21,7 @@ const settings = {
   hideCodes: false,
   autoCopy: true,
   showNextCode: true,
+  sound: true,
   pinHash: '',
   bioCredId: '',
   autoLockMs: 0,
@@ -31,10 +37,17 @@ let deferredInstallPrompt = null;
 let swRegistration = null;
 const revealed = new Map(); // id -> timeout for "hide codes" mode
 
+function isLightTheme(t) {
+  return t === 'ocean-dew' || t === 'rose-quartz' || t === 'frosted-pearl' || t === 'light';
+}
+
 function resolvedTheme() {
-  return settings.theme === 'auto'
-    ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
-    : settings.theme;
+  if (settings.theme === 'auto') {
+    return matchMedia('(prefers-color-scheme: light)').matches ? 'ocean-dew' : 'midnight-obsidian';
+  }
+  if (settings.theme === 'light') return 'ocean-dew';
+  if (settings.theme === 'dark') return 'midnight-obsidian';
+  return settings.theme;
 }
 
 function saveSettings() {
@@ -46,12 +59,13 @@ function saveSettings() {
 function applyTheme() {
   const t = resolvedTheme();
   document.documentElement.dataset.theme = t;
+  const isLight = isLightTheme(t);
   const meta = $('#themeMeta');
-  if (meta) meta.setAttribute('content', t === 'light' ? '#f8fafc' : '#060812');
+  if (meta) meta.setAttribute('content', isLight ? '#f8fafc' : '#060812');
   const tb = $('#themeBtn');
   if (tb) {
-    tb.textContent = t === 'light' ? '🌙' : '☀️';
-    tb.title = t === 'light' ? 'ডার্ক মোডে যান' : 'লাইট মোডে যান';
+    tb.textContent = isLight ? '🌙' : '☀️';
+    tb.title = isLight ? 'ডার্ক থিমে যান (চাপুন বা থিম লিস্ট দেখুন)' : 'লাইট থিমে যান (চাপুন বা থিম লিস্ট দেখুন)';
   }
   const pb = $('#privacyBtn');
   if (pb) {
@@ -172,6 +186,8 @@ async function doSync(manual = false) {
   try {
     const r = await sync.syncNow(vault);
     vault = r.vault; render(); refreshSyncDot();
+    playSuccessChime(settings);
+    haptic('success');
     if (manual) toast(r.status === 'unchanged' ? 'সব আপ-টু-ডেট ✅' : 'সিঙ্ক সম্পন্ন ✅');
     else if (r.status === 'merged') toast('অন্য ডিভাইস থেকে পরিবর্তন এসেছে ☁️');
   } catch (e) {
@@ -216,12 +232,25 @@ const ctx = {
   registerBiometric,
   promptInstall,
   checkForUpdate,
+  openThemePicker: () => openThemePicker(ctx),
+  openSecurityAudit: () => openSecurityAudit(ctx),
+  openPasswordGenerator: () => openPasswordGenerator(ctx),
+  openFocusView: (id) => openFocusView(ctx, id),
+  openAccountQr: (id) => openAccountQr(ctx, id),
+  printEmergencySheet: () => printEmergencySheet(ctx),
+  openSecurity: () => openSecurity(ctx),
+  openSync: () => openSync(ctx),
+  openTrash: () => openTrash(ctx),
 };
 
 // ---------- rendering ----------
 function visibleAccounts() {
   let list = vault.accounts.slice();
-  if (settings.group) list = list.filter((a) => a.group === settings.group);
+  if (settings.group === '__pinned__') {
+    list = list.filter((a) => a.pinned);
+  } else if (settings.group) {
+    list = list.filter((a) => a.group === settings.group);
+  }
   if (query) {
     const q = query.toLowerCase();
     list = list.filter((a) => `${a.issuer} ${a.name} ${a.group} ${a.note}`.toLowerCase().includes(q));
@@ -237,12 +266,23 @@ function visibleAccounts() {
 
 function renderChips() {
   const groups = vault.groups || [];
-  $('#groups').innerHTML = groups.length
-    ? [''].concat(groups).map((g) =>
-      `<button class="chip ${settings.group === g ? 'active' : ''}" data-g="${esc(g)}">${g ? esc(g) : 'সব'}</button>`).join('')
+  const hasPinned = vault.accounts.some((a) => a.pinned);
+  const items = [{ id: '', label: 'সব' }];
+  if (hasPinned) items.push({ id: '__pinned__', label: '⭐ প্রিয়' });
+  groups.forEach((g) => items.push({ id: g, label: g }));
+
+  $('#groups').innerHTML = items.length > 1
+    ? items.map((it) =>
+        `<button class="chip ${settings.group === it.id ? 'active' : ''}" data-g="${esc(it.id)}">${esc(it.label)}</button>`
+      ).join('')
     : '';
+
   $('#groups').querySelectorAll('.chip').forEach((c) => (c.onclick = () => {
-    settings.group = c.dataset.g; localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); render();
+    playDropletSound(settings);
+    haptic('light');
+    settings.group = c.dataset.g;
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    render();
   }));
 }
 
@@ -266,6 +306,7 @@ function cardHtml(a, idx, total) {
       <span>📋 কোড কপি করুন</span>
     </div>
     <div class="swipe-action swipe-left-action">
+      <button class="swipe-btn focus-btn" data-swipe-focus="${a.id}" title="বড় পর্দায় ফোকাস ভিউ">🔍</button>
       <button class="swipe-btn edit-btn" data-swipe-edit="${a.id}" title="এডিট">✏️</button>
       <button class="swipe-btn pin-btn" data-swipe-pin="${a.id}" title="${a.pinned ? 'আনপিন' : 'পিন'}">${a.pinned ? '⭐' : '☆'}</button>
       <button class="swipe-btn del-btn" data-swipe-del="${a.id}" title="মুছুন">🗑️</button>
@@ -411,6 +452,9 @@ function render() {
 
     attachSwipeListeners(card, a);
 
+    const focusBtn = wrap.querySelector('[data-swipe-focus]');
+    if (focusBtn) focusBtn.onclick = (e) => { e.stopPropagation(); resetOpenSwipe(); openFocusView(ctx, id); };
+
     const editBtn = wrap.querySelector('[data-swipe-edit]');
     if (editBtn) editBtn.onclick = (e) => { e.stopPropagation(); resetOpenSwipe(); openEdit(ctx, id); };
 
@@ -419,6 +463,8 @@ function render() {
       e.stopPropagation(); resetOpenSwipe();
       updateAccount(vault, id, { pinned: !a.pinned });
       commit();
+      playDropletSound(settings);
+      haptic('light');
       toast(a.pinned ? 'আনপিন করা হয়েছে' : 'পিন করা হয়েছে ⭐');
     };
 
@@ -429,6 +475,8 @@ function render() {
       if (ok) {
         deleteAccount(vault, id);
         commit();
+        playDropletSound(settings);
+        haptic('warning');
         toast('রিসাইকেল বিনে সরানো হয়েছে 🗑️');
       }
     };
@@ -445,6 +493,7 @@ function render() {
         return;
       }
       if (reorderMode) return;
+      if (e.target.closest('[data-ring]')) return openFocusView(ctx, id);
       if (e.target.closest('[data-edit]')) return openEdit(ctx, id);
       if (e.target.closest('[data-next]')) {
         updateAccount(vault, id, { counter: (a.counter || 0) + 1 });
@@ -455,7 +504,8 @@ function render() {
       if (settings.autoCopy) {
         const raw = codeEl.dataset.raw;
         if (raw && (await copyText(raw))) {
-          navigator.vibrate?.(25);
+          playDropletSound(settings);
+          haptic('light');
           card.classList.add('copied');
           const tag = card.querySelector(`[data-copied="${id}"]`);
           tag?.classList.remove('hidden');
@@ -549,10 +599,33 @@ if (fab) fab.onclick = () => openAddMenu(ctx);
 const menuBtn = $('#menuBtn');
 if (menuBtn) menuBtn.onclick = () => openMenu(ctx);
 const themeBtn = $('#themeBtn');
-if (themeBtn) themeBtn.onclick = () => {
-  settings.theme = resolvedTheme() === 'light' ? 'dark' : 'light';
-  saveSettings();
-};
+if (themeBtn) {
+  let pressTimer = null;
+  themeBtn.addEventListener('pointerdown', () => {
+    pressTimer = setTimeout(() => {
+      pressTimer = null;
+      openThemePicker(ctx);
+    }, 450);
+  });
+  themeBtn.addEventListener('pointerup', () => {
+    if (pressTimer) {
+      clearTimeout(pressTimer);
+      pressTimer = null;
+      const current = resolvedTheme();
+      settings.theme = isLightTheme(current) ? 'midnight-obsidian' : 'ocean-dew';
+      playDropletSound(settings);
+      haptic('light');
+      saveSettings();
+    }
+  });
+  themeBtn.addEventListener('pointercancel', () => {
+    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+  });
+  themeBtn.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    openThemePicker(ctx);
+  });
+}
 const syncBtn = $('#syncBtn');
 if (syncBtn) syncBtn.onclick = () => openSync(ctx);
 const bannerSyncBtn = $('#bannerSyncBtn');
@@ -628,10 +701,11 @@ document.addEventListener('visibilitychange', () => {
 addEventListener('online', () => doSync(false));
 matchMedia('(prefers-color-scheme: light)').addEventListener?.('change', applyTheme);
 
-// Water-drop ripple on tap
+// Water-drop ripple & physical pop sound on tap
 document.addEventListener('pointerdown', (e) => {
-  const t = e.target.closest('.card, .fab, .btn, .chip, .icon-btn, .menu-item, .qbtn');
+  const t = e.target.closest('.card, .fab, .btn, .chip, .icon-btn, .menu-item, .qbtn, .tab-btn');
   if (!t) return;
+  playDropletSound(settings);
   const r = t.getBoundingClientRect();
   const d = Math.max(r.width, r.height) * 1.65;
   const s = document.createElement('span');

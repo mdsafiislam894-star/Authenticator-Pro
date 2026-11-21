@@ -73,8 +73,9 @@ export function openAddMenu(ctx) {
     <button class="menu-item" data-a="gaexport"><span class="ico">📤</span><span>Google Authenticator থেকে ইমপোর্ট<small>ধাপে ধাপে সহজ গাইড + ব্যাচ প্রিভিউ</small></span></button>
     <button class="menu-item" data-a="paste"><span class="ico">📋</span><span>লিংক পেস্ট করুন<small>otpauth:// বা otpauth-migration://</small></span></button>
     <button class="menu-item" data-a="manual"><span class="ico">⌨️</span><span>Secret key নিজে লিখুন<small>TOTP / HOTP / Steam Guard</small></span></button>
+    <button class="menu-item" data-a="pwdgen"><span class="ico">🔑</span><span>পাসওয়ার্ড জেনারেটর<small>নতুন অ্যাকাউন্টের জন্য শক্তিশালী পাসওয়ার্ড তৈরি</small></span></button>
     <input type="file" id="file" accept="image/*" multiple class="hidden">`);
-  const go = (a) => { m.close(); ({ scan: () => openScan(ctx), paste: () => openPaste(ctx), manual: () => openManual(ctx), gaexport: () => openGAGuide(ctx) })[a]?.(); };
+  const go = (a) => { m.close(); ({ scan: () => openScan(ctx), paste: () => openPaste(ctx), manual: () => openManual(ctx), gaexport: () => openGAGuide(ctx), pwdgen: () => ctx.openPasswordGenerator() })[a]?.(); };
   m.el.querySelectorAll('[data-a]').forEach((b) => (b.onclick = () => {
     if (b.dataset.a === 'image') return m.el.querySelector('#file').click();
     go(b.dataset.a);

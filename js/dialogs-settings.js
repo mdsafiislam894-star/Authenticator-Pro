@@ -21,10 +21,14 @@ export function openMenu(ctx) {
       <div class="stat-card"><b>${user ? 'চালু' : 'বন্ধ'}</b><span>অটো-সিঙ্ক</span></div>
     </div>
     ${ctx.canInstall ? '<button class="menu-item" data-a="install"><span class="ico">📲</span><span>ফোনে অ্যাপ ইনস্টল করুন<small>আসল অ্যাপের মতো হোম স্ক্রিনে যুক্ত হবে</small></span></button>' : ''}
+    <button class="menu-item" data-a="themePicker"><span class="ico">🎨</span><span>প্রিমিয়াম থিম ও লিকুইড স্টাইল<small>৬টি স্বতন্ত্র ডার্ক ও লাইট কাঁচের ভাইব</small></span></button>
+    <button class="menu-item" data-a="audit"><span class="ico">🛡️</span><span>সিকিউরিটি অডিট ও হেলথ স্কোর<small>ভল্ট নিরাপত্তা স্কোর ও রিকমেন্ডেশন</small></span></button>
+    <button class="menu-item" data-a="pwdGen"><span class="ico">🔑</span><span>শক্তিশালী পাসওয়ার্ড জেনারেটর<small>এলোমেলো পাসওয়ার্ড বা পাসফ্রেজ তৈরি</small></span></button>
     <button class="menu-item" data-a="telegram"><span class="ico">✈️</span><span>টেলিগ্রাম ক্লাউড ব্যাকআপ<small>${tgReady ? '✅ বট চ্যাটে ব্যাকআপ চালু' : 'বট টোকেন ও চ্যাট আইডি যুক্ত করুন'}</small></span></button>
     <button class="menu-item" data-a="sync"><span class="ico">☁️</span><span>Google ব্যাকআপ ও সিঙ্ক<small>${user ? esc(user.email) : 'Continue with Google দিয়ে কানেক্ট করুন'}</small></span></button>
-    <button class="menu-item" data-a="theme"><span class="ico">${ctx.resolvedTheme() === 'light' ? '🌙' : '☀️'}</span><span>${ctx.resolvedTheme() === 'light' ? 'ডার্ক মোডে যান' : 'লাইট মোডে যান'}</span></button>
+    <button class="menu-item" data-a="theme"><span class="ico">${ctx.resolvedTheme().includes('ocean') || ctx.resolvedTheme().includes('light') || ctx.resolvedTheme().includes('quartz') || ctx.resolvedTheme().includes('pearl') ? '🌙' : '☀️'}</span><span>${ctx.resolvedTheme().includes('ocean') || ctx.resolvedTheme().includes('light') || ctx.resolvedTheme().includes('quartz') || ctx.resolvedTheme().includes('pearl') ? 'ডার্ক মোডে যান' : 'লাইট মোডে যান'}</span></button>
     <button class="menu-item" data-a="privacy"><span class="ico">${ctx.settings.hideCodes ? '👁️' : '🙈'}</span><span>${ctx.settings.hideCodes ? 'কোড দেখান' : 'কোড লুকান (প্রাইভেসি মোড)'}<small>${ctx.settings.hideCodes ? 'এখন কোড লুকানো আছে' : 'ট্যাপ না করা পর্যন্ত কোড ব্লার থাকবে'}</small></span></button>
+    <button class="menu-item" data-a="print"><span class="ico">🖨️</span><span>ইমার্জেন্সি ভল্ট প্রিন্ট শিট<small>অফলাইন পেপার ব্যাকআপ / PDF</small></span></button>
     <button class="menu-item" data-a="gaExport"><span class="ico">📤</span><span>Google Authenticator-এ এক্সপোর্ট<small>অন্য ফোনে নিতে Export QR তৈরি করুন</small></span></button>
     <button class="menu-item" data-a="reorder"><span class="ico">↕️</span><span>অ্যাকাউন্ট সাজান (রিঅর্ডার)<small>ম্যানুয়াল অর্ডারে উপরে-নিচে নিন</small></span></button>
     <button class="menu-item" data-a="groups"><span class="ico">🗂️</span><span>গ্রুপ ম্যানেজ</span></button>
@@ -45,10 +49,16 @@ export function openMenu(ctx) {
     m.close();
     ({
       install: () => ctx.promptInstall(),
+      themePicker: () => ctx.openThemePicker(),
+      audit: () => ctx.openSecurityAudit(),
+      pwdGen: () => ctx.openPasswordGenerator(),
       telegram: () => openTelegramDialog(ctx),
       sync: () => openSync(ctx),
+      print: () => ctx.printEmergencySheet(),
       theme: () => {
-        ctx.settings.theme = ctx.resolvedTheme() === 'light' ? 'dark' : 'light';
+        const cur = ctx.resolvedTheme();
+        const isL = cur.includes('ocean') || cur.includes('light') || cur.includes('quartz') || cur.includes('pearl');
+        ctx.settings.theme = isL ? 'midnight-obsidian' : 'ocean-dew';
         ctx.saveSettings();
       },
       privacy: () => {
@@ -339,10 +349,21 @@ function openPinSetup(ctx) {
 export function openSecurity(ctx) {
   const s = ctx.settings;
   const bioSupported = !!globalThis.PublicKeyCredential;
+  const THEME_OPTIONS = [
+    ['auto', 'অটো (সিস্টেম)'],
+    ['ocean-dew', '🌊 Aqua Dew (লাইট)'],
+    ['midnight-obsidian', '🌌 Obsidian Abyss (ডার্ক)'],
+    ['rose-quartz', '🌸 Rose Quartz (লাইট)'],
+    ['cyber-matrix', '🧪 Emerald Jade (ডার্ক)'],
+    ['amethyst-royale', '🔮 Amethyst Royale (ডার্ক)'],
+    ['frosted-pearl', '❄️ Frosted Pearl (লাইট)'],
+  ];
+
   const m = openModal(`
     <h3>🔒 সিকিউরিটি ও সেটিংস</h3>
-    <div class="switch"><span>🌗 থিম মোড</span><select id="theme" style="padding:8px 12px;border-radius:14px;background:var(--card2);color:var(--text);border:1px solid var(--edge)">
-      ${['auto', 'dark', 'light'].map((t) => `<option value="${t}" ${s.theme === t ? 'selected' : ''}>${{ auto: 'অটো (সিস্টেম)', dark: 'ডার্ক', light: 'লাইট' }[t]}</option>`).join('')}</select></div>
+    <div class="switch"><span>🎨 থিম ও স্টাইল</span><select id="theme" style="padding:8px 12px;border-radius:14px;background:var(--card2);color:var(--text);border:1px solid var(--edge)">
+      ${THEME_OPTIONS.map(([val, lbl]) => `<option value="${val}" ${s.theme === val ? 'selected' : ''}>${lbl}</option>`).join('')}</select></div>
+    <div class="switch"><span>🔊 ওয়াটার ড্রপ সাউন্ড ও হ্যাপটিক্স</span><input type="checkbox" id="sound" ${s.sound !== false ? 'checked' : ''}></div>
     <div class="switch"><span>⏭️ পরবর্তী কোড প্রিভিউ (≤৮ সে.)</span><input type="checkbox" id="nextCode" ${s.showNextCode !== false ? 'checked' : ''}></div>
     <div class="switch"><span>🙈 কোড লুকানো (ট্যাপ করলে দেখাবে)</span><input type="checkbox" id="hide" ${s.hideCodes ? 'checked' : ''}></div>
     <div class="switch"><span>📋 ট্যাপ করলে অটো-কপি</span><input type="checkbox" id="copy" ${s.autoCopy ? 'checked' : ''}></div>
@@ -357,6 +378,7 @@ export function openSecurity(ctx) {
 
   const q = (x) => m.el.querySelector(x);
   q('#theme').onchange = (e) => { s.theme = e.target.value; ctx.saveSettings(); };
+  q('#sound').onchange = (e) => { s.sound = e.target.checked; ctx.saveSettings(); };
   q('#nextCode').onchange = (e) => { s.showNextCode = e.target.checked; ctx.saveSettings(); };
   q('#hide').onchange = (e) => { s.hideCodes = e.target.checked; ctx.saveSettings(); };
   q('#copy').onchange = (e) => { s.autoCopy = e.target.checked; ctx.saveSettings(); };

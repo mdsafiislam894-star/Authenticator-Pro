@@ -13,6 +13,7 @@ export function openEdit(ctx, id) {
     <div class="quick-grid">
       <button class="qbtn" id="qCopy"><span class="qico">📋</span>কপি</button>
       <button class="qbtn ${a.pinned ? 'active' : ''}" id="qPin"><span class="qico">⭐</span>${a.pinned ? 'আনপিন' : 'পিন'}</button>
+      <button class="qbtn" id="qFocus"><span class="qico">🔍</span>ফোকাস</button>
       <button class="qbtn" id="qQr"><span class="qico">📱</span>QR কোড</button>
       <button class="qbtn danger" id="qDel"><span class="qico">🗑️</span>ডিলিট</button>
     </div>
@@ -54,6 +55,8 @@ export function openEdit(ctx, id) {
     m.close();
     toast(a.pinned ? 'পিন করা হয়েছে ⭐' : 'আনপিন করা হয়েছে');
   };
+
+  m.el.querySelector('#qFocus').onclick = () => { m.close(); ctx.openFocusView(id); };
 
   m.el.querySelector('#qQr').onclick = () => { m.close(); openQr(ctx, id); };
 

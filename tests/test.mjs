@@ -136,4 +136,32 @@ await t('store: dedupe, trash, restore, permanent delete, reorder', () => {
   assert.ok(v.deleted[second.id]);
 });
 
+import { generatePassword, generatePassphrase, evaluateStrength } from '../js/password.js';
+import { runSecurityAudit } from '../js/security-audit.js';
+
+await t('password generator creates robust passwords & passphrases', () => {
+  const pwd = generatePassword({ length: 20 });
+  assert.equal(pwd.length, 20);
+  const st = evaluateStrength(pwd);
+  assert.ok(st.score >= 60);
+
+  const phrase = generatePassphrase(4, '-');
+  assert.equal(phrase.split('-').length, 4);
+});
+
+await t('security audit detects missing lock, backup, and duplicate secrets', () => {
+  const vault = {
+    accounts: [
+      { id: '1', issuer: 'Google', secret: 'JBSWY3DPEHPK3PXP' },
+      { id: '2', issuer: 'Facebook', secret: 'JBSWY3DPEHPK3PXP' }, // Duplicate secret
+    ],
+    trash: [],
+  };
+  const settings = { pinHash: '', bioCredId: '' }; // Missing lock
+  const audit = runSecurityAudit(vault, settings);
+  assert.ok(audit.score < 80);
+  assert.ok(audit.issues.some((iss) => iss.title.includes('ডুপ্লিকেট')));
+  assert.ok(audit.issues.some((iss) => iss.title.includes('লক')));
+});
+
 console.log(`\n${passed} tests passed`);
