@@ -1,9 +1,12 @@
-// Advanced Modal Dialogs: Theme & Vibe Picker, Security Audit, Password Generator, Focus View, Single-Account QR & Emergency Print.
-import { openModal, esc, toast, copyText, confirmDialog, qrSvg } from './ui.js';
+// Advanced Modal Dialogs: Theme & Vibe Picker, Security Audit, Password Generator, Focus View, Single-Account QR, Emergency Print, Time Sync, Vault Analytics & Batch Actions.
+import { openModal, esc, toast, copyText, confirmDialog, qrSvg, download } from './ui.js';
 import { generateCode, secondsLeft, buildOtpauth } from './otp.js';
 import { runSecurityAudit } from './security-audit.js';
 import { generatePassword, generatePassphrase, evaluateStrength } from './password.js';
-import { playDropletSound, haptic } from './audio.js';
+import { playDropletSound, playSuccessChime, playGlassTap, haptic } from './audio.js';
+import { syncNetworkTime, getClockDriftMs } from './timesync.js';
+import { computeVaultAnalytics } from './analytics.js';
+import { updateAccount, deleteAccount } from './store.js';
 
 export const THEMES = [
   {
@@ -469,4 +472,206 @@ export async function printEmergencySheet(ctx) {
     </html>
   `);
   w.document.close();
+}
+
+// ---------- 7. High-Precision Network Time Sync & Clock Correction ----------
+export function openTimeSyncDialog(ctx) {
+  const driftMs = getClockDriftMs();
+  const driftSec = (driftMs / 1000).toFixed(2);
+  const isGood = Math.abs(driftMs) < 2500;
+
+  const m = openModal(`
+    <h3>⏱️ টাইম সিঙ্ক ও ক্লক কারেকশন</h3>
+    <div style="text-align:center;padding:16px 0 10px">
+      <div style="display:inline-block;padding:16px 24px;border-radius:24px;background:var(--card2);border:1px solid ${isGood ? 'var(--ok)' : 'var(--danger)'}">
+        <span style="font-size:36px">${isGood ? '⏰' : '⚠️'}</span>
+        <div style="font-size:18px;font-weight:800;color:var(--text);margin-top:6px">
+          Drift Offset: <span id="tsDriftDisplay">${driftSec > 0 ? '+' : ''}${driftSec}s</span>
+        </div>
+        <small style="color:${isGood ? 'var(--ok)' : 'var(--danger)'};font-weight:700">
+          ${isGood ? 'ডিভাইস ক্লক সঠিক ও সিঙ্কড ✅' : 'ক্লক ব্যবধান বেশি — ওটিপি কোড ব্যর্থ হতে পারে!'}
+        </small>
+      </div>
+    </div>
+    <p class="hint">যদি আপনার ফোনের সময় কয়েক সেকেন্ড এদিক ওদিক হয়, তবে ২FA কোড ভুল দেখাতে পারে। এই ফিচারটি সরাসরি আন্তর্জাতিক পারমাণবিক ঘড়ির সাথে সময় মিলিয়ে কোড নিখুঁত রাখে।</p>
+    
+    <div class="row" style="margin-top:16px">
+      <button class="btn block" id="tsClose">বন্ধ করুন</button>
+      <button class="btn primary block" id="tsSyncBtn">🔄 এখনই টাইম সিঙ্ক করুন</button>
+    </div>
+  `);
+
+  const q = (s) => m.el.querySelector(s);
+  q('#tsClose').onclick = () => m.close();
+
+  q('#tsSyncBtn').onclick = async () => {
+    q('#tsSyncBtn').disabled = true;
+    q('#tsSyncBtn').textContent = 'সিঙ্ক হচ্ছে… ⏳';
+    playGlassTap(ctx.settings);
+    const res = await syncNetworkTime();
+    q('#tsSyncBtn').disabled = false;
+    q('#tsSyncBtn').textContent = '🔄 এখনই টাইম সিঙ্ক করুন';
+
+    if (res.success) {
+      playSuccessChime(ctx.settings);
+      haptic('success');
+      toast(`টাইম সিঙ্ক সফল! অফসেট: ${res.driftSec}s ✅`);
+      q('#tsDriftDisplay').textContent = `${Number(res.driftSec) > 0 ? '+' : ''}${res.driftSec}s`;
+      ctx.render();
+    } else {
+      toast('টাইম সিঙ্ক ব্যর্থ: ' + (res.error || 'ইন্টারনেট সমস্যা'));
+    }
+  };
+}
+
+// ---------- 8. Vault Intelligence & Analytics Dashboard ----------
+export function openVaultAnalytics(ctx) {
+  const data = computeVaultAnalytics(ctx.vault);
+
+  const m = openModal(`
+    <h3>📊 ভল্ট ইনসাইটস ও অ্যানালিটিক্স</h3>
+    <div class="stat-grid" style="margin-top:12px">
+      <div class="stat-card"><b>${data.totalAccounts}</b><span>মোট ২FA অ্যাকাউন্ট</span></div>
+      <div class="stat-card"><b>${data.pinnedCount}</b><span>পিন্ড অ্যাকাউন্ট</span></div>
+      <div class="stat-card"><b>${data.totalCopies}</b><span>মোট কোড কপি</span></div>
+    </div>
+
+    <h4 style="margin:16px 0 8px;font-size:14px;color:var(--text)">🏷️ সার্ভিস ক্যাটাগরি বিশ্লেষণ</h4>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${Object.values(data.categories).map((cat) => {
+        const pct = data.totalAccounts ? Math.round((cat.count / data.totalAccounts) * 100) : 0;
+        return `
+        <div style="background:var(--card);padding:10px 14px;border-radius:16px;border:1px solid var(--line)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-size:13px;font-weight:600">${cat.icon} ${cat.label}</span>
+            <span style="font-size:12px;font-weight:700;color:var(--muted)">${cat.count}টি (${pct}%)</span>
+          </div>
+          <div style="height:6px;border-radius:999px;background:var(--card2);overflow:hidden">
+            <div style="width:${pct}%;height:100%;border-radius:999px;background:${cat.color}"></div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <h4 style="margin:16px 0 8px;font-size:14px;color:var(--text)">🛡️ এনক্রিপশন অ্যালগরিদম অনুপাত</h4>
+    <div style="display:flex;gap:8px">
+      ${Object.entries(data.algos).map(([alg, count]) => `
+        <div class="stat-card" style="flex:1">
+          <b>${count}</b><span>${alg}</span>
+        </div>
+      `).join('')}
+    </div>
+
+    ${data.mostActive.length ? `
+      <h4 style="margin:16px 0 8px;font-size:14px;color:var(--text)">🔥 সর্বাধিক ব্যবহৃত অ্যাকাউন্ট</h4>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${data.mostActive.map(({ account, copies }) => `
+          <div style="display:flex;justify-content:space-between;padding:8px 12px;background:var(--card2);border-radius:14px;font-size:13px">
+            <span style="font-weight:600">${esc(account.issuer || account.name || 'Account')}</span>
+            <span style="color:var(--accent);font-weight:700">${copies} বার কপি</span>
+          </div>
+        `).join('')}
+      </div>` : ''}
+
+    <button class="btn block" id="closeAnalytics" style="margin-top:20px">বন্ধ করুন</button>
+  `);
+
+  m.el.querySelector('#closeAnalytics').onclick = () => m.close();
+}
+
+// ---------- 9. Multi-Select Batch Actions Dialog ----------
+export function openBatchActionsModal(ctx, selectedIds, onDone) {
+  if (!selectedIds.length) return toast('কোনো অ্যাকাউন্ট নির্বাচিত নেই');
+  const count = selectedIds.length;
+  const groups = ctx.vault.groups || [];
+
+  const m = openModal(`
+    <h3>☑️ ব্যাচ অ্যাকশন (${count}টি নির্বাচিত)</h3>
+    <p class="hint">নির্বাচিত সমস্ত অ্যাকাউন্টে একসাথে নিচের অ্যাকশনগুলো প্রয়োগ করতে পারেন।</p>
+    
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px">
+      <button class="menu-item" id="bPin">
+        <span class="ico">⭐</span>
+        <span>সবগুলো পিন / আনপিন করুন<small>তালিকার শীর্ষে নিয়ে আসুন বা সরান</small></span>
+      </button>
+      
+      <div style="padding:12px;background:var(--card2);border-radius:18px;border:1px solid var(--line)">
+        <span style="font-size:13px;font-weight:700;display:block;margin-bottom:6px">🗂️ গ্রুপ পরিবর্তন করুন:</span>
+        <div style="display:flex;gap:6px">
+          <input id="bGroupInput" list="bGroupList" placeholder="নতুন বা বিদ্যমান গ্রুপ..." style="flex:1;padding:8px 12px;border-radius:12px;background:var(--card);border:1px solid var(--edge);color:var(--text)">
+          <datalist id="bGroupList">${groups.map((g) => `<option value="${esc(g)}">`).join('')}</datalist>
+          <button class="btn sm primary" id="bGroupSave">সেভ</button>
+        </div>
+      </div>
+
+      <button class="menu-item" id="bExport">
+        <span class="ico">💾</span>
+        <span>নির্বাচিত কোডগুলো এক্সপোর্ট করুন<small>শুধুমাত্র নির্বাচিতগুলোর এনক্রিপ্টেড ব্যাকআপ</small></span>
+      </button>
+
+      <button class="menu-item" id="bDelete" style="color:var(--danger)">
+        <span class="ico">🗑️</span>
+        <span>সবগুলো রিসাইকেল বিনে পাঠান<small>ভুল হলে ৩০ দিনের মধ্যে রিস্টোর সম্ভব</small></span>
+      </button>
+    </div>
+  `);
+
+  const q = (s) => m.el.querySelector(s);
+
+  q('#bPin').onclick = () => {
+    selectedIds.forEach((id) => {
+      const a = ctx.vault.accounts.find((x) => x.id === id);
+      if (a) updateAccount(ctx.vault, id, { pinned: !a.pinned });
+    });
+    ctx.commit();
+    playDropletSound(ctx.settings);
+    m.close();
+    onDone?.();
+    toast(`${count}টি অ্যাকাউন্টের পিন স্ট্যাটাস বদলানো হয়েছে ⭐`);
+  };
+
+  q('#bGroupSave').onclick = () => {
+    const grp = q('#bGroupInput').value.trim();
+    selectedIds.forEach((id) => {
+      updateAccount(ctx.vault, id, { group: grp });
+    });
+    if (grp && !ctx.vault.groups.includes(grp)) ctx.vault.groups.push(grp);
+    ctx.commit();
+    playDropletSound(ctx.settings);
+    m.close();
+    onDone?.();
+    toast(`${count}টি অ্যাকাউন্টে গ্রুপ '${grp || 'কোনো গ্রুপ নয়'}' সেভ হয়েছে ✅`);
+  };
+
+  q('#bExport').onclick = async () => {
+    const subset = {
+      ...ctx.vault,
+      accounts: ctx.vault.accounts.filter((a) => selectedIds.includes(a.id)),
+    };
+    const { encryptJson } = await import('./crypto.js');
+    const pwd = prompt('ব্যাকআপ ফাইলের জন্য একটি পাসফ্রেজ দিন (৮+ অক্ষর):');
+    if (!pwd || pwd.length < 8) return toast('কমপক্ষে ৮ অক্ষর দিতে হবে');
+    const enc = await encryptJson(subset, pwd);
+    download(`authpro-batch-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(enc));
+    m.close();
+    onDone?.();
+    toast(`${count}টি অ্যাকাউন্ট এক্সপোর্ট করা হয়েছে 💾`);
+  };
+
+  q('#bDelete').onclick = async () => {
+    m.close();
+    const ok = await confirmDialog(
+      'ব্যাচ ডিলিট?',
+      `নির্বাচিত ${count}টি অ্যাকাউন্ট মুছে রিসাইকেল বিনে পাঠানো হবে।`,
+      'সব মুছুন',
+      true
+    );
+    if (!ok) return;
+    selectedIds.forEach((id) => deleteAccount(ctx.vault, id));
+    ctx.commit();
+    playDropletSound(ctx.settings);
+    haptic('warning');
+    onDone?.();
+    toast(`${count}টি অ্যাকাউন্ট রিসাইকেল বিনে পাঠানো হয়েছে 🗑️`);
+  };
 }

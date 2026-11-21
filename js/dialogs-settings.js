@@ -24,6 +24,9 @@ export function openMenu(ctx) {
     <button class="menu-item" data-a="themePicker"><span class="ico">🎨</span><span>প্রিমিয়াম থিম ও লিকুইড স্টাইল<small>৬টি স্বতন্ত্র ডার্ক ও লাইট কাঁচের ভাইব</small></span></button>
     <button class="menu-item" data-a="audit"><span class="ico">🛡️</span><span>সিকিউরিটি অডিট ও হেলথ স্কোর<small>ভল্ট নিরাপত্তা স্কোর ও রিকমেন্ডেশন</small></span></button>
     <button class="menu-item" data-a="pwdGen"><span class="ico">🔑</span><span>শক্তিশালী পাসওয়ার্ড জেনারেটর<small>এলোমেলো পাসওয়ার্ড বা পাসফ্রেজ তৈরি</small></span></button>
+    <button class="menu-item" data-a="timeSync"><span class="ico">⏱️</span><span>টাইম সিঙ্ক ও ক্লক কারেকশন<small>ইন্টারনেট থেকে সঠিক সময় নিয়ে কোড ফিক্স</small></span></button>
+    <button class="menu-item" data-a="analytics"><span class="ico">📊</span><span>ভল্ট ইনসাইটস ও অ্যানালিটিক্স<small>ক্যাটাগরি, অ্যালগো ও কপি অ্যানালাইসিস</small></span></button>
+    <button class="menu-item" data-a="batch"><span class="ico">☑️</span><span>ব্যাচ মোড (একাধিক নির্বাচন)<small>একসাথে একাধিক একাউন্ট পিন, গ্রুপ বা ব্যাকআপ</small></span></button>
     <button class="menu-item" data-a="telegram"><span class="ico">✈️</span><span>টেলিগ্রাম ক্লাউড ব্যাকআপ<small>${tgReady ? '✅ বট চ্যাটে ব্যাকআপ চালু' : 'বট টোকেন ও চ্যাট আইডি যুক্ত করুন'}</small></span></button>
     <button class="menu-item" data-a="sync"><span class="ico">☁️</span><span>Google ব্যাকআপ ও সিঙ্ক<small>${user ? esc(user.email) : 'Continue with Google দিয়ে কানেক্ট করুন'}</small></span></button>
     <button class="menu-item" data-a="theme"><span class="ico">${ctx.resolvedTheme().includes('ocean') || ctx.resolvedTheme().includes('light') || ctx.resolvedTheme().includes('quartz') || ctx.resolvedTheme().includes('pearl') ? '🌙' : '☀️'}</span><span>${ctx.resolvedTheme().includes('ocean') || ctx.resolvedTheme().includes('light') || ctx.resolvedTheme().includes('quartz') || ctx.resolvedTheme().includes('pearl') ? 'ডার্ক মোডে যান' : 'লাইট মোডে যান'}</span></button>
@@ -52,6 +55,9 @@ export function openMenu(ctx) {
       themePicker: () => ctx.openThemePicker(),
       audit: () => ctx.openSecurityAudit(),
       pwdGen: () => ctx.openPasswordGenerator(),
+      timeSync: () => ctx.openTimeSyncDialog(),
+      analytics: () => ctx.openVaultAnalytics(),
+      batch: () => ctx.startBatchMode(),
       telegram: () => openTelegramDialog(ctx),
       sync: () => openSync(ctx),
       print: () => ctx.printEmergencySheet(),

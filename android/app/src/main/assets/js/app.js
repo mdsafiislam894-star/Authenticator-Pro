@@ -10,8 +10,12 @@ import { openMenu, openSync, openTelegramDialog, openSecurity } from './dialogs-
 import { playDropletSound, playSuccessChime, haptic } from './audio.js';
 import {
   openThemePicker, openSecurityAudit, openFocusView,
-  openPasswordGenerator, openAccountQr, printEmergencySheet
+  openPasswordGenerator, openAccountQr, printEmergencySheet,
+  openTimeSyncDialog, openVaultAnalytics, openBatchActionsModal
 } from './dialogs-advanced.js';
+import { initPhysics } from './physics.js';
+import { syncNetworkTime, getCorrectedNow } from './timesync.js';
+import { recordCopyEvent } from './analytics.js';
 
 // ---------- state ----------
 let vault = loadVault();
@@ -32,6 +36,8 @@ const settings = {
 };
 let query = '';
 let reorderMode = false;
+let batchMode = false;
+const selectedBatchIds = new Set();
 let lastHiddenAt = 0;
 let deferredInstallPrompt = null;
 let swRegistration = null;
@@ -215,6 +221,31 @@ function startReorder() {
   refreshSyncDot();
 }
 
+function startBatchMode() {
+  if (vault.accounts.length === 0) return toast('কোনো অ্যাকাউন্ট নেই');
+  batchMode = true;
+  selectedBatchIds.clear();
+  reorderMode = false;
+  $('#reorderBar')?.classList.add('hidden');
+  updateBatchUi();
+  render();
+  toast('ব্যাচ মোড চালু: অ্যাকাউন্ট সিলেক্ট করুন');
+}
+
+function exitBatchMode() {
+  batchMode = false;
+  selectedBatchIds.clear();
+  updateBatchUi();
+  render();
+}
+
+function updateBatchUi() {
+  const bar = $('#batchBar');
+  if (bar) bar.classList.toggle('hidden', !batchMode);
+  const cnt = $('#batchCount');
+  if (cnt) cnt.textContent = `${selectedBatchIds.size}টি নির্বাচিত`;
+}
+
 const ctx = {
   get vault() { return vault; },
   get canInstall() { return !!deferredInstallPrompt; },
@@ -228,6 +259,8 @@ const ctx = {
   hashPin,
   refreshSyncDot,
   startReorder,
+  startBatchMode,
+  exitBatchMode,
   lockNow: () => showLock(true),
   registerBiometric,
   promptInstall,
@@ -235,6 +268,9 @@ const ctx = {
   openThemePicker: () => openThemePicker(ctx),
   openSecurityAudit: () => openSecurityAudit(ctx),
   openPasswordGenerator: () => openPasswordGenerator(ctx),
+  openTimeSyncDialog: () => openTimeSyncDialog(ctx),
+  openVaultAnalytics: () => openVaultAnalytics(ctx),
+  openBatchActionsModal: (ids, done) => openBatchActionsModal(ctx, ids, done),
   openFocusView: (id) => openFocusView(ctx, id),
   openAccountQr: (id) => openAccountQr(ctx, id),
   printEmergencySheet: () => printEmergencySheet(ctx),
@@ -311,7 +347,7 @@ function cardHtml(a, idx, total) {
       <button class="swipe-btn pin-btn" data-swipe-pin="${a.id}" title="${a.pinned ? 'আনপিন' : 'পিন'}">${a.pinned ? '⭐' : '☆'}</button>
       <button class="swipe-btn del-btn" data-swipe-del="${a.id}" title="মুছুন">🗑️</button>
     </div>
-    <div class="card" data-id="${a.id}">
+    <div class="card ${batchMode && selectedBatchIds.has(a.id) ? 'selected-for-batch' : ''}" data-id="${a.id}">
       <div class="avatar" style="background:${avatarColor(title)}">${esc(title[0].toUpperCase())}</div>
       <div class="info">
         <div class="info-top">
@@ -352,7 +388,7 @@ function attachSwipeListeners(card, a) {
   const id = a.id;
 
   const onTouchStart = (e) => {
-    if (reorderMode) return;
+    if (reorderMode || batchMode) return;
     const touch = e.touches ? e.touches[0] : e;
     startX = touch.clientX;
     startY = touch.clientY;
@@ -365,7 +401,7 @@ function attachSwipeListeners(card, a) {
   };
 
   const onTouchMove = (e) => {
-    if (reorderMode) return;
+    if (reorderMode || batchMode) return;
     const touch = e.touches ? e.touches[0] : e;
     currentX = touch.clientX;
     const diffX = currentX - startX;
@@ -397,7 +433,7 @@ function attachSwipeListeners(card, a) {
   };
 
   const onTouchEnd = async () => {
-    if (reorderMode) return;
+    if (reorderMode || batchMode) return;
     card.classList.remove('swiping');
     if (!isDragging) return;
 
@@ -409,6 +445,7 @@ function attachSwipeListeners(card, a) {
       const codeEl = card.querySelector('.code');
       const raw = codeEl?.dataset.raw;
       if (raw && (await copyText(raw))) {
+        recordCopyEvent(id);
         card.classList.add('copied');
         const tag = card.querySelector(`[data-copied="${id}"]`);
         tag?.classList.remove('hidden');
@@ -486,6 +523,19 @@ function render() {
         resetOpenSwipe();
         return;
       }
+      if (batchMode) {
+        if (selectedBatchIds.has(id)) {
+          selectedBatchIds.delete(id);
+          card.classList.remove('selected-for-batch');
+        } else {
+          selectedBatchIds.add(id);
+          card.classList.add('selected-for-batch');
+          playDropletSound(settings);
+          haptic('light');
+        }
+        updateBatchUi();
+        return;
+      }
       const moveBtn = e.target.closest('[data-move]');
       if (moveBtn) {
         const dir = Number(moveBtn.dataset.move);
@@ -504,6 +554,7 @@ function render() {
       if (settings.autoCopy) {
         const raw = codeEl.dataset.raw;
         if (raw && (await copyText(raw))) {
+          recordCopyEvent(id);
           playDropletSound(settings);
           haptic('light');
           card.classList.add('copied');
@@ -526,7 +577,7 @@ function reveal(id) {
 
 let lastCounters = {};
 async function tick(force = false) {
-  const now = Date.now();
+  const now = getCorrectedNow();
   for (const a of vault.accounts) {
     const codeEl = document.querySelector(`[data-code="${a.id}"]`);
     if (!codeEl) continue;
@@ -540,6 +591,9 @@ async function tick(force = false) {
         const code = await generateCode(a, now);
         codeEl.dataset.raw = code;
         codeEl.textContent = formatCode(code);
+        codeEl.classList.remove('fresh');
+        void codeEl.offsetWidth;
+        codeEl.classList.add('fresh');
         if (nextEl && a.type !== 'hotp') {
           const nextCode = await generateCode(a, now + period * 1000);
           nextEl.textContent = 'পরবর্তী: ' + formatCode(nextCode);
@@ -644,6 +698,39 @@ if (reorderDoneBtn) reorderDoneBtn.onclick = () => {
   toast('সাজানো সেভ হয়েছে ✅');
 };
 
+// Batch Action Bar Handlers
+const batchActionBtn = $('#batchActionBtn');
+if (batchActionBtn) {
+  batchActionBtn.onclick = () => {
+    openBatchActionsModal(ctx, Array.from(selectedBatchIds), () => {
+      exitBatchMode();
+    });
+  };
+}
+const batchCloseBtn = $('#batchCloseBtn');
+if (batchCloseBtn) {
+  batchCloseBtn.onclick = () => exitBatchMode();
+}
+
+// Panic Quick-Lock: Triple tap header brand logo/title to immediately lock vault
+let brandTapCount = 0;
+let brandTapTimer = null;
+const brandEl = document.querySelector('.brand');
+if (brandEl) {
+  brandEl.addEventListener('click', () => {
+    brandTapCount++;
+    clearTimeout(brandTapTimer);
+    if (brandTapCount >= 3) {
+      brandTapCount = 0;
+      haptic('warning');
+      showLock(true);
+      toast('🔒 প্যানিক কুইক-লক সক্রিয় করা হয়েছে');
+    } else {
+      brandTapTimer = setTimeout(() => { brandTapCount = 0; }, 800);
+    }
+  });
+}
+
 // Search toggle & inputs
 const searchToggleBtn = $('#searchToggleBtn');
 const searchBarWrap = $('#searchBarWrap');
@@ -715,6 +802,8 @@ document.addEventListener('pointerdown', (e) => {
   setTimeout(() => s.remove(), 750);
 });
 
+initPhysics();
+syncNetworkTime().catch(() => {});
 applyTheme();
 render();
 refreshSyncDot();
