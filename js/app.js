@@ -246,7 +246,7 @@ function renderChips() {
   }));
 }
 
-const R = 11, CIRC = 2 * Math.PI * R;
+const R = 15, CIRC = 2 * Math.PI * R;
 let openSwipeCard = null;
 
 function resetOpenSwipe() {
@@ -274,8 +274,8 @@ function cardHtml(a, idx, total) {
       <div class="avatar" style="background:${avatarColor(title)}">${esc(title[0].toUpperCase())}</div>
       <div class="info">
         <div class="info-top">
-          <span class="issuer">${a.pinned ? '⭐ ' : ''}${esc(title)}</span>
-          ${sub ? `<span class="name">• ${esc(sub)}</span>` : ''}
+          <div class="issuer">${a.pinned ? '⭐ ' : ''}${esc(title)}</div>
+          ${sub ? `<div class="name">${esc(sub)}</div>` : ''}
         </div>
         <div class="code-row">
           <div class="code" data-code="${a.id}">······</div>
@@ -287,15 +287,17 @@ function cardHtml(a, idx, total) {
           </div>
         </div>
       </div>
-      ${reorderMode ? `
-        <div class="card-actions">
-          <button class="mini" data-move="-1" data-mid="${a.id}" ${idx === 0 ? 'disabled style="opacity:.35"' : ''} title="উপরে নিন">↑</button>
-          <button class="mini" data-move="1" data-mid="${a.id}" ${idx === total - 1 ? 'disabled style="opacity:.35"' : ''} title="নিচে নিন">↓</button>
-        </div>` : `
-        ${isHotp
-          ? `<button class="mini" data-next="${a.id}" title="পরবর্তী কোড">⟳</button>`
-          : `<div class="ring" data-ring="${a.id}"><svg viewBox="0 0 28 28"><circle class="bg" cx="14" cy="14" r="${R}" fill="none" stroke-width="2.5"/><circle class="fg" cx="14" cy="14" r="${R}" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="${CIRC}" stroke-dashoffset="0"/></svg><span class="sec"></span></div>`}
-        <div class="card-actions"><button class="mini" data-edit="${a.id}" title="অপশন">⋮</button></div>`}
+      <div class="card-side">
+        ${reorderMode ? `
+          <div class="reorder-actions">
+            <button class="mini" data-move="-1" data-mid="${a.id}" ${idx === 0 ? 'disabled style="opacity:.35"' : ''} title="উপরে নিন">↑</button>
+            <button class="mini" data-move="1" data-mid="${a.id}" ${idx === total - 1 ? 'disabled style="opacity:.35"' : ''} title="নিচে নিন">↓</button>
+          </div>` : `
+          ${isHotp
+            ? `<button class="mini" data-next="${a.id}" title="পরবর্তী কোড">⟳</button>`
+            : `<div class="ring" data-ring="${a.id}"><svg viewBox="0 0 36 36"><circle class="bg" cx="18" cy="18" r="${R}" fill="none" stroke-width="2.5"/><circle class="fg" cx="18" cy="18" r="${R}" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="${CIRC}" stroke-dashoffset="0"/></svg><span class="sec"></span></div>`}
+          <button class="mini edit-icon-btn" data-edit="${a.id}" title="এডিট">✏️</button>`}
+      </div>
     </div>
   </div>`;
 }
@@ -546,6 +548,11 @@ const fab = $('#fab');
 if (fab) fab.onclick = () => openAddMenu(ctx);
 const menuBtn = $('#menuBtn');
 if (menuBtn) menuBtn.onclick = () => openMenu(ctx);
+const themeBtn = $('#themeBtn');
+if (themeBtn) themeBtn.onclick = () => {
+  settings.theme = resolvedTheme() === 'light' ? 'dark' : 'light';
+  saveSettings();
+};
 const syncBtn = $('#syncBtn');
 if (syncBtn) syncBtn.onclick = () => openSync(ctx);
 const bannerSyncBtn = $('#bannerSyncBtn');

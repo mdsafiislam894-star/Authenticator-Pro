@@ -101,11 +101,26 @@ export function openTelegramDialog(ctx) {
     <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
 
     <button class="btn telegram-btn block" id="tgSend">🚀 টেলিগ্রামে এখনই ব্যাকআপ পাঠান</button>
+    <button class="btn block" id="tgRestore" style="margin-top:10px">📥 টেলিগ্রাম ব্যাকআপ ফাইল রিস্টোর করুন</button>
     <p class="hint" style="margin-top:10px">🛡️ <b>নিরাপত্তা:</b> টেলিগ্রামে পাঠানোর আগে আপনার পাসফ্রেজ দিয়ে পুরো ভল্ট <b>AES-256-GCM</b> এনক্রিপ্ট হবে। পাসফ্রেজ ছাড়া কেউ এই ফাইল খুলতে পারবে না।</p>
   `);
 
   const q = (s) => m.el.querySelector(s);
   
+  if (q('#tgRestore')) {
+    q('#tgRestore').onclick = () => {
+      m.close();
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json,application/json';
+      input.onchange = (e) => {
+        const f = e.target.files[0];
+        if (f) restoreFile(ctx, f);
+      };
+      input.click();
+    };
+  }
+
   q('#tgSave').onclick = () => {
     const token = q('#tgToken').value.trim();
     const chat = q('#tgChatId').value.trim();
@@ -184,14 +199,22 @@ export function openSync(ctx) {
     <h3>☁️ Google দিয়ে অটো-ব্যাকআপ</h3>
     <p class="hint"><b>Continue with Google</b> চেপে আপনার Gmail সিলেক্ট করলেই Google Drive-এর <b>লুকানো appDataFolder</b>-এ সব কোড AES-256-GCM এনক্রিপ্ট হয়ে অটো-ব্যাকআপ হবে। অন্য ফোনে লগইন করলেই সব ফিরে আসবে।</p>
     <button class="btn google-btn block" id="in">${GOOGLE_G_SVG}<span>Continue with Google</span></button>
-    <details class="glass-details" ${configured ? '' : 'open'}>
-      <summary>⚙️ Google Client ID কনফিগারেশন</summary>
-      <p class="hint" style="margin-top:8px">Google Cloud Console-এর Web OAuth Client ID:<br><b>Authorized JavaScript origins:</b> <code>https://mdsafiislam894-star.github.io</code></p>
-      <div class="field"><input id="cid" value="${esc(drive.getClientId())}" placeholder="xxxx.apps.googleusercontent.com"></div>
+    
+    <div style="margin-top:12px;padding:12px;border-radius:18px;background:var(--card2);border:1px solid var(--line);font-size:12.5px;line-height:1.5">
+      <b style="color:var(--text)">⚠️ যদি Error 401: invalid_client দেখায়:</b><br>
+      ১. Google Cloud Console-এ Client ID তৈরি করার সময় Application Type অবশ্যই <b>Web application</b> বেছে নিতে হবে (Android নয়)।<br>
+      ২. <b>Authorized JavaScript origins</b>-এ হুবহু এটি যুক্ত করুন:<br>
+      <code style="word-break:break-all;color:var(--accent)">https://mdsafiislam894-star.github.io</code><br>
+      ৩. আপনার Web Client ID টি নিচের বক্সে বসিয়ে <b>'Client ID সেভ'</b> চাপুন।
+    </div>
+
+    <details class="glass-details" style="margin-top:10px" ${configured ? '' : 'open'}>
+      <summary>⚙️ Google Client ID পরিবর্তন / সেভ</summary>
+      <div class="field" style="margin-top:8px"><input id="cid" value="${esc(drive.getClientId())}" placeholder="xxxx.apps.googleusercontent.com"></div>
       <button class="btn sm primary" id="saveCid">Client ID সেভ</button>
     </details>
-    <div style="margin-top:14px;border-top:1px solid var(--line);padding-top:10px">
-      <p class="hint" style="margin:0 0 8px">💡 <b>Google Cloud ছাড়াও চ্যাটে সরাসরি ব্যাকআপ সম্ভব:</b></p>
+    <div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px">
+      <p class="hint" style="margin:0 0 8px">✈️ <b>Google Cloud ছাড়াও চ্যাটে সরাসরি ব্যাকআপ সম্ভব:</b></p>
       <button class="btn telegram-btn block" id="openTgFromSync">✈️ টেলিগ্রাম ক্লাউড ব্যাকআপ খুলুন</button>
     </div>`);
 
