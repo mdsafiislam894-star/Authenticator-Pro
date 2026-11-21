@@ -3,11 +3,10 @@
 
 export const APP_VERSION = '3.0.0';
 
-// Your Google Cloud Console OAuth 2.0 Web Client ID
-export const GOOGLE_CLIENT_ID = '27606258719-02kr9qcjnelt3j5hloq2sgsjutlc2ol1.apps.googleusercontent.com';
+// Google OAuth 2.0 Web Client ID specified by user
+export const GOOGLE_CLIENT_ID = '685192227575-g6vens1ihouer90l2sbtpe24oav14e8a.apps.googleusercontent.com';
 
-// Drive-এ শুধু এই অ্যাপের নিজস্ব লুকানো ফোল্ডারে ফাইল থাকবে (appDataFolder)।
-// আপনার অন্য কোনো Drive ফাইল অ্যাপ দেখতে পারে না।
+// Drive AppData Folder Scope
 export const SCOPES = [
   'https://www.googleapis.com/auth/drive.appdata',
   'openid',
@@ -16,3 +15,4 @@ export const SCOPES = [
 ].join(' ');
 
 export const BACKUP_FILE_NAME = 'authenticator-pro-backup.json';
+export const TELEGRAM_CONFIG_KEY = 'authpro.telegram.v1';

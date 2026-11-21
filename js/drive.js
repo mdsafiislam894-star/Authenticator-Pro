@@ -17,8 +17,9 @@ function saveSession(s) {
 }
 
 export function getClientId() {
-  if (GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.startsWith('YOUR_CLIENT_ID')) return GOOGLE_CLIENT_ID;
-  return (localStorage.getItem(CLIENT_OVERRIDE_KEY) || '').trim();
+  const override = (localStorage.getItem(CLIENT_OVERRIDE_KEY) || '').trim();
+  if (override && override.includes('.apps.googleusercontent.com')) return override;
+  return GOOGLE_CLIENT_ID || '';
 }
 
 export function setClientIdOverride(id) {

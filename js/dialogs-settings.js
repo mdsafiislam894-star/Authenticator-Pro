@@ -6,11 +6,13 @@ import { encryptJson, decryptJson } from './crypto.js';
 import { mergeVaults } from './store.js';
 import { buildOtpauth } from './otp.js';
 import { openGroupManager, openTrash, openMigrationExport } from './dialogs-manage.js';
+import { getTelegramConfig, saveTelegramConfig, isTelegramConfigured, testTelegram, sendBackupToTelegram } from './telegram.js';
 
 export function openMenu(ctx) {
   const user = drive.getUser();
   const trashCount = (ctx.vault.trash || []).length;
   const pinnedCount = ctx.vault.accounts.filter((a) => a.pinned).length;
+  const tgReady = isTelegramConfigured();
   const m = openModal(`
     <h3>মেনু <span class="badge-count">v${esc(ctx.appVersion)}</span></h3>
     <div class="stat-grid">
@@ -19,6 +21,7 @@ export function openMenu(ctx) {
       <div class="stat-card"><b>${user ? 'চালু' : 'বন্ধ'}</b><span>অটো-সিঙ্ক</span></div>
     </div>
     ${ctx.canInstall ? '<button class="menu-item" data-a="install"><span class="ico">📲</span><span>ফোনে অ্যাপ ইনস্টল করুন<small>আসল অ্যাপের মতো হোম স্ক্রিনে যুক্ত হবে</small></span></button>' : ''}
+    <button class="menu-item" data-a="telegram"><span class="ico">✈️</span><span>টেলিগ্রাম ক্লাউড ব্যাকআপ<small>${tgReady ? '✅ বট চ্যাটে ব্যাকআপ চালু' : 'বট টোকেন ও চ্যাট আইডি যুক্ত করুন'}</small></span></button>
     <button class="menu-item" data-a="sync"><span class="ico">☁️</span><span>Google ব্যাকআপ ও সিঙ্ক<small>${user ? esc(user.email) : 'Continue with Google দিয়ে কানেক্ট করুন'}</small></span></button>
     <button class="menu-item" data-a="gaExport"><span class="ico">📤</span><span>Google Authenticator-এ এক্সপোর্ট<small>অন্য ফোনে নিতে Export QR তৈরি করুন</small></span></button>
     <button class="menu-item" data-a="reorder"><span class="ico">↕️</span><span>অ্যাকাউন্ট সাজান (রিঅর্ডার)<small>ম্যানুয়াল অর্ডারে উপরে-নিচে নিন</small></span></button>
@@ -40,6 +43,7 @@ export function openMenu(ctx) {
     m.close();
     ({
       install: () => ctx.promptInstall(),
+      telegram: () => openTelegramDialog(ctx),
       sync: () => openSync(ctx),
       gaExport: () => openMigrationExport(ctx),
       reorder: () => ctx.startReorder(),
@@ -54,6 +58,104 @@ export function openMenu(ctx) {
     })[a]?.();
   }));
 }
+      lockNow: () => ctx.lockNow(),
+      update: () => ctx.checkForUpdate(),
+      about: () => openAbout(ctx),
+    })[a]?.();
+  }));
+}
+
+export function openTelegramDialog(ctx) {
+  const cfg = getTelegramConfig();
+  const m = openModal(`
+    <h3>✈️ টেলিগ্রাম ক্লাউড ব্যাকআপ</h3>
+    <div class="telegram-card">
+      <h4>🤖 ব্যক্তিগত টেলিগ্রাম বটের মাধ্যমে ব্যাকআপ</h4>
+      <p class="hint" style="margin:4px 0 8px">Telegram-এ আপনার সব ২FA কোডের AES-256-GCM এনক্রিপ্টেড ব্যাকআপ সরাসরি ফাইল আকারে পাঠিয়ে রাখুন।</p>
+      <ol class="telegram-steps">
+        <li>টেলিগ্রামে <code>@BotFather</code>-এ গিয়ে <code>/newbot</code> লিখে ১ মিনিটে একটি ফ্রি বট বানিয়ে <b>Bot Token</b> নিন।</li>
+        <li>টেলিগ্রামে <code>@userinfobot</code>-এ <code>/start</code> দিয়ে আপনার ব্যক্তিগত <b>Chat ID</b> নিন।</li>
+        <li>নিচের বক্সে বসিয়ে <b>'কানেকশন টেস্ট'</b> ও <b>'ব্যাকআপ পাঠান'</b> চাপুন।</li>
+      </ol>
+    </div>
+    
+    <div class="field">
+      <label>Telegram Bot Token</label>
+      <input id="tgToken" type="text" placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ" value="${esc(cfg.botToken || '')}">
+    </div>
+    <div class="field">
+      <label>Chat ID</label>
+      <input id="tgChatId" type="text" placeholder="যেমন: 123456789" value="${esc(cfg.chatId || '')}">
+    </div>
+
+    <div class="row">
+      <button class="btn sm" id="tgTest">🧪 কানেকশন টেস্ট</button>
+      <button class="btn sm primary" id="tgSave">💾 তথ্য সেভ করুন</button>
+    </div>
+
+    <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+
+    <button class="btn telegram-btn block" id="tgSend">🚀 টেলিগ্রামে এখনই ব্যাকআপ পাঠান</button>
+    <p class="hint" style="margin-top:10px">🛡️ <b>নিরাপত্তা:</b> টেলিগ্রামে পাঠানোর আগে আপনার পাসফ্রেজ দিয়ে পুরো ভল্ট <b>AES-256-GCM</b> এনক্রিপ্ট হবে। পাসফ্রেজ ছাড়া কেউ এই ফাইল খুলতে পারবে না।</p>
+  `);
+
+  const q = (s) => m.el.querySelector(s);
+  
+  q('#tgSave').onclick = () => {
+    const token = q('#tgToken').value.trim();
+    const chat = q('#tgChatId').value.trim();
+    saveTelegramConfig({ botToken: token, chatId: chat });
+    toast('টেলিগ্রাম তথ্য সেভ হয়েছে ✅');
+  };
+
+  q('#tgTest').onclick = async () => {
+    const token = q('#tgToken').value.trim();
+    const chat = q('#tgChatId').value.trim();
+    if (!token || !chat) return toast('বট টোকেন ও চ্যাট আইডি দিন');
+    q('#tgTest').disabled = true;
+    q('#tgTest').textContent = 'টেস্ট হচ্ছে…';
+    try {
+      await testTelegram(token, chat);
+      saveTelegramConfig({ botToken: token, chatId: chat });
+      toast('টেলিগ্রামে টেস্ট মেসেজ সফলভাবে পাঠানো হয়েছে! ✅');
+    } catch (err) {
+      toast('টেস্ট ব্যর্থ: ' + err.message);
+    } finally {
+      q('#tgTest').disabled = false;
+      q('#tgTest').textContent = '🧪 কানেকশন টেস্ট';
+    }
+  };
+
+  q('#tgSend').onclick = () => {
+    const token = q('#tgToken').value.trim();
+    const chat = q('#tgChatId').value.trim();
+    if (!token || !chat) return toast('প্রথমে বট টোকেন ও চ্যাট আইডি দিন');
+    if (ctx.vault.accounts.length === 0) return toast('ব্যাকআপ করার মতো কোনো অ্যাকাউন্ট নেই');
+    saveTelegramConfig({ botToken: token, chatId: chat });
+
+    const pm = openModal(`
+      <h3>🔑 ব্যাকআপ এনক্রিপশন পাসফ্রেজ</h3>
+      <p class="hint">ফাইলটি সুরক্ষিত রাখতে একটি শক্তিশালী পাসফ্রেজ (কমপক্ষে ৮ অক্ষর) দিন। টেলিগ্রাম থেকে ফাইল ডাউনলোড করে রিস্টোর করার সময় এটি লাগবে।</p>
+      <div class="field"><input id="tgPass" type="password" placeholder="পাসফ্রেজ (৮+ অক্ষর)"></div>
+      <button class="btn primary block" id="tgPassOk">এনক্রিপ্ট করে টেলিগ্রামে পাঠান</button>
+    `);
+
+    pm.el.querySelector('#tgPassOk').onclick = async () => {
+      const pass = pm.el.querySelector('#tgPass').value;
+      if (pass.length < 8) return toast('কমপক্ষে ৮ অক্ষর দিন');
+      pm.close();
+      m.close();
+      toast('এনক্রিপ্ট করে টেলিগ্রামে পাঠানো হচ্ছে… ⏳');
+      try {
+        const encrypted = await encryptJson(ctx.vault, pass);
+        await sendBackupToTelegram(encrypted, ctx.vault.accounts.length);
+        toast('টেলিগ্রামে সফলভাবে ব্যাকআপ ফাইল পাঠানো হয়েছে! ✈️✅');
+      } catch (err) {
+        toast('টেলিগ্রাম ব্যাকআপ ব্যর্থ: ' + err.message);
+      }
+    };
+  };
+}
 
 export function openSync(ctx) {
   const user = drive.getUser();
@@ -62,7 +164,7 @@ export function openSync(ctx) {
   const m = openModal(user ? `
     <h3>☁️ Google ব্যাকআপ</h3>
     <div class="profile-card">
-      ${user.picture ? `<img src="${esc(user.picture)}" alt="">` : '<div class="avatar" style="width:44px;height:44px;background:linear-gradient(145deg,#5b8cff,#8a5cff)">G</div>'}
+      ${user.picture ? `<img src="${esc(user.picture)}" alt="">` : '<div class="avatar" style="width:40px;height:40px;background:linear-gradient(145deg,#0284c7,#2563eb)">G</div>'}
       <div class="pinfo">
         <b>${esc(user.name || user.email)}</b>
         <small>${esc(user.email)}</small>
@@ -78,14 +180,18 @@ export function openSync(ctx) {
     <p class="hint"><b>Continue with Google</b> চেপে আপনার Gmail সিলেক্ট করলেই Google Drive-এর <b>লুকানো appDataFolder</b>-এ সব কোড AES-256-GCM এনক্রিপ্ট হয়ে অটো-ব্যাকআপ হবে। অন্য ফোনে লগইন করলেই সব ফিরে আসবে।</p>
     <button class="btn google-btn block" id="in">${GOOGLE_G_SVG}<span>Continue with Google</span></button>
     <details class="glass-details" ${configured ? '' : 'open'}>
-      <summary>⚙️ Google Client ID সেটিংস</summary>
-      <p class="hint" style="margin-top:8px">Google Cloud Console-এর Web OAuth Client ID এখানে বসাতে পারেন।<br><b>Authorized JavaScript origins:</b> <code>https://mdsafiislam894-star.github.io</code></p>
+      <summary>⚙️ Google Client ID কনফিগারেশন</summary>
+      <p class="hint" style="margin-top:8px">Google Cloud Console-এর Web OAuth Client ID:<br><b>Authorized JavaScript origins:</b> <code>https://mdsafiislam894-star.github.io</code></p>
       <div class="field"><input id="cid" value="${esc(drive.getClientId())}" placeholder="xxxx.apps.googleusercontent.com"></div>
       <button class="btn sm primary" id="saveCid">Client ID সেভ</button>
     </details>
-    <p class="hint" style="margin-top:14px;border-top:1px solid rgba(255,255,255,0.08);padding-top:10px">💡 <b>Google ছাড়াও অফলাইনে সম্পূর্ণ ব্যাকআপ করা যায়!</b><br>মেনু থেকে <b>'ব্যাকআপ ফাইল নামান (এনক্রিপ্টেড)'</b> দিয়ে কোনো Google ক্লাউড ছাড়াই ফাইল নামিয়ে রাখতে পারেন।</p>`);
+    <div style="margin-top:14px;border-top:1px solid var(--line);padding-top:10px">
+      <p class="hint" style="margin:0 0 8px">💡 <b>Google Cloud ছাড়াও চ্যাটে সরাসরি ব্যাকআপ সম্ভব:</b></p>
+      <button class="btn telegram-btn block" id="openTgFromSync">✈️ টেলিগ্রাম ক্লাউড ব্যাকআপ খুলুন</button>
+    </div>`);
 
   const q = (s) => m.el.querySelector(s);
+  if (q('#openTgFromSync')) q('#openTgFromSync').onclick = () => { m.close(); openTelegramDialog(ctx); };
   if (q('#saveCid')) q('#saveCid').onclick = () => {
     const val = q('#cid').value.trim();
     if (!val.includes('.apps.googleusercontent.com')) return toast('সঠিক Google Client ID দিন');

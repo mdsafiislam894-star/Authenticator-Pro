@@ -1,12 +1,12 @@
-import { $, esc, toast, avatarColor, formatCode, copyText } from './ui.js';
+import { $, esc, toast, avatarColor, formatCode, copyText, confirmDialog } from './ui.js';
 import { generateCode, secondsLeft } from './otp.js';
-import { loadVault, saveVault, updateAccount, moveAccountOrder } from './store.js';
+import { loadVault, saveVault, updateAccount, deleteAccount, moveAccountOrder } from './store.js';
 import { APP_VERSION } from './config.js';
 import * as drive from './drive.js';
 import * as sync from './sync.js';
 import { openAddMenu, openScan } from './dialogs-add.js';
 import { openEdit } from './dialogs-manage.js';
-import { openMenu, openSync } from './dialogs-settings.js';
+import { openMenu, openSync, openTelegramDialog } from './dialogs-settings.js';
 
 // ---------- state ----------
 let vault = loadVault();
@@ -47,11 +47,16 @@ function applyTheme() {
   const t = resolvedTheme();
   document.documentElement.dataset.theme = t;
   const meta = $('#themeMeta');
-  if (meta) meta.setAttribute('content', t === 'light' ? '#e9eeff' : '#070a14');
+  if (meta) meta.setAttribute('content', t === 'light' ? '#f8fafc' : '#060812');
   const tb = $('#themeBtn');
   if (tb) {
     tb.textContent = t === 'light' ? '🌙' : '☀️';
     tb.title = t === 'light' ? 'ডার্ক মোডে যান' : 'লাইট মোডে যান';
+  }
+  const pb = $('#privacyBtn');
+  if (pb) {
+    pb.textContent = settings.hideCodes ? '🙈' : '👁️';
+    pb.title = settings.hideCodes ? 'কোড দেখান' : 'কোড লুকান';
   }
 }
 
@@ -240,37 +245,146 @@ function renderChips() {
   }));
 }
 
-const R = 16, CIRC = 2 * Math.PI * R;
+const R = 11, CIRC = 2 * Math.PI * R;
+let openSwipeCard = null;
+
+function resetOpenSwipe() {
+  if (openSwipeCard) {
+    openSwipeCard.style.transform = 'translateX(0px)';
+    openSwipeCard = null;
+  }
+}
 
 function cardHtml(a, idx, total) {
   const title = a.issuer || a.name || 'Unnamed';
   const sub = a.issuer ? a.name : '';
   const isHotp = a.type === 'hotp';
-  return `<div class="card" data-id="${a.id}">
-    <div class="avatar" style="background:${avatarColor(title)}">${esc(title[0].toUpperCase())}</div>
-    <div class="info">
-      <div class="issuer">${a.pinned ? '⭐ ' : ''}${esc(title)}</div>
-      ${sub ? `<div class="name">${esc(sub)}</div>` : ''}
-      <div class="code-row">
-        <div class="code" data-code="${a.id}">······</div>
-        ${!isHotp ? `<span class="next-code" data-nextcode="${a.id}"></span>` : ''}
-      </div>
-      <div class="meta">
-        ${a.group ? `<span class="tag">${esc(a.group)}</span>` : ''}
-        ${a.type !== 'totp' ? `<span class="tag">${a.type.toUpperCase()}</span>` : ''}
-        <span class="tag copied-tag hidden" data-copied="${a.id}">কপিড ✓</span>
-      </div>
+  return `
+  <div class="card-wrap" data-wrap-id="${a.id}">
+    <div class="swipe-action swipe-right-action">
+      <span>📋 কোড কপি করুন</span>
     </div>
-    ${reorderMode ? `
-      <div class="card-actions">
-        <button class="mini" data-move="-1" data-mid="${a.id}" ${idx === 0 ? 'disabled style="opacity:.35"' : ''} title="উপরে নিন">↑</button>
-        <button class="mini" data-move="1" data-mid="${a.id}" ${idx === total - 1 ? 'disabled style="opacity:.35"' : ''} title="নিচে নিন">↓</button>
-      </div>` : `
-      ${isHotp
-        ? `<button class="mini" data-next="${a.id}" title="পরবর্তী কোড">⟳</button>`
-        : `<div class="ring" data-ring="${a.id}"><svg viewBox="0 0 38 38"><circle class="bg" cx="19" cy="19" r="${R}" fill="none" stroke-width="3"/><circle class="fg" cx="19" cy="19" r="${R}" fill="none" stroke-width="3" stroke-linecap="round" stroke-dasharray="${CIRC}" stroke-dashoffset="0"/></svg><span class="sec"></span></div>`}
-      <div class="card-actions"><button class="mini" data-edit="${a.id}" title="এডিট / ডিলিট / অপশন">✏️</button></div>`}
+    <div class="swipe-action swipe-left-action">
+      <button class="swipe-btn edit-btn" data-swipe-edit="${a.id}" title="এডিট">✏️</button>
+      <button class="swipe-btn pin-btn" data-swipe-pin="${a.id}" title="${a.pinned ? 'আনপিন' : 'পিন'}">${a.pinned ? '⭐' : '☆'}</button>
+      <button class="swipe-btn del-btn" data-swipe-del="${a.id}" title="মুছুন">🗑️</button>
+    </div>
+    <div class="card" data-id="${a.id}">
+      <div class="avatar" style="background:${avatarColor(title)}">${esc(title[0].toUpperCase())}</div>
+      <div class="info">
+        <div class="info-top">
+          <span class="issuer">${a.pinned ? '⭐ ' : ''}${esc(title)}</span>
+          ${sub ? `<span class="name">• ${esc(sub)}</span>` : ''}
+        </div>
+        <div class="code-row">
+          <div class="code" data-code="${a.id}">······</div>
+          ${!isHotp ? `<span class="next-code" data-nextcode="${a.id}"></span>` : ''}
+          <div class="meta">
+            ${a.group ? `<span class="tag">${esc(a.group)}</span>` : ''}
+            ${a.type !== 'totp' ? `<span class="tag">${a.type.toUpperCase()}</span>` : ''}
+            <span class="tag copied-tag hidden" data-copied="${a.id}">কপিড ✓</span>
+          </div>
+        </div>
+      </div>
+      ${reorderMode ? `
+        <div class="card-actions">
+          <button class="mini" data-move="-1" data-mid="${a.id}" ${idx === 0 ? 'disabled style="opacity:.35"' : ''} title="উপরে নিন">↑</button>
+          <button class="mini" data-move="1" data-mid="${a.id}" ${idx === total - 1 ? 'disabled style="opacity:.35"' : ''} title="নিচে নিন">↓</button>
+        </div>` : `
+        ${isHotp
+          ? `<button class="mini" data-next="${a.id}" title="পরবর্তী কোড">⟳</button>`
+          : `<div class="ring" data-ring="${a.id}"><svg viewBox="0 0 28 28"><circle class="bg" cx="14" cy="14" r="${R}" fill="none" stroke-width="2.5"/><circle class="fg" cx="14" cy="14" r="${R}" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="${CIRC}" stroke-dashoffset="0"/></svg><span class="sec"></span></div>`}
+        <div class="card-actions"><button class="mini" data-edit="${a.id}" title="অপশন">⋮</button></div>`}
+    </div>
   </div>`;
+}
+
+function attachSwipeListeners(card, a) {
+  let startX = 0;
+  let startY = 0;
+  let currentX = 0;
+  let isDragging = false;
+  let isHorizontal = null;
+  const id = a.id;
+
+  const onTouchStart = (e) => {
+    if (reorderMode) return;
+    const touch = e.touches ? e.touches[0] : e;
+    startX = touch.clientX;
+    startY = touch.clientY;
+    currentX = startX;
+    isDragging = false;
+    isHorizontal = null;
+    if (openSwipeCard && openSwipeCard !== card) {
+      resetOpenSwipe();
+    }
+  };
+
+  const onTouchMove = (e) => {
+    if (reorderMode) return;
+    const touch = e.touches ? e.touches[0] : e;
+    currentX = touch.clientX;
+    const diffX = currentX - startX;
+    const diffY = touch.clientY - startY;
+
+    if (isHorizontal === null) {
+      if (Math.abs(diffX) > 8 && Math.abs(diffX) > Math.abs(diffY)) {
+        isHorizontal = true;
+      } else if (Math.abs(diffY) > 8) {
+        isHorizontal = false;
+      }
+    }
+
+    if (isHorizontal) {
+      if (e.cancelable) e.preventDefault();
+      isDragging = true;
+      card.classList.add('swiping');
+      let offset = diffX;
+      if (openSwipeCard === card) {
+        offset = diffX - 120;
+      }
+      if (offset > 0) {
+        offset = Math.min(offset, 90);
+      } else {
+        offset = Math.max(offset, -140);
+      }
+      card.style.transform = `translateX(${offset}px)`;
+    }
+  };
+
+  const onTouchEnd = async () => {
+    if (reorderMode) return;
+    card.classList.remove('swiping');
+    if (!isDragging) return;
+
+    const diffX = currentX - startX;
+    if (diffX > 60) {
+      card.style.transform = 'translateX(0px)';
+      openSwipeCard = null;
+      navigator.vibrate?.(30);
+      const codeEl = card.querySelector('.code');
+      const raw = codeEl?.dataset.raw;
+      if (raw && (await copyText(raw))) {
+        card.classList.add('copied');
+        const tag = card.querySelector(`[data-copied="${id}"]`);
+        tag?.classList.remove('hidden');
+        setTimeout(() => { card.classList.remove('copied'); tag?.classList.add('hidden'); }, 1400);
+        toast('কোড কপি হয়েছে ✓');
+      }
+    } else if (diffX < -50) {
+      card.style.transform = 'translateX(-120px)';
+      openSwipeCard = card;
+      navigator.vibrate?.(20);
+    } else {
+      card.style.transform = 'translateX(0px)';
+      openSwipeCard = null;
+    }
+  };
+
+  card.addEventListener('touchstart', onTouchStart, { passive: true });
+  card.addEventListener('touchmove', onTouchMove, { passive: false });
+  card.addEventListener('touchend', onTouchEnd);
+  card.addEventListener('touchcancel', onTouchEnd);
 }
 
 function render() {
@@ -279,12 +393,47 @@ function render() {
   $('#reorderBar').classList.toggle('hidden', !reorderMode);
   renderChips();
   $('#empty').classList.toggle('hidden', vault.accounts.length > 0);
+  const badge = $('#countBadge');
+  if (badge) badge.textContent = vault.accounts.length;
+
   $('#list').innerHTML = list.map((a, i) => cardHtml(a, i, list.length)).join('');
 
   const orderedIds = list.map((a) => a.id);
-  $('#list').querySelectorAll('.card').forEach((card) => {
-    const id = card.dataset.id;
+  $('#list').querySelectorAll('.card-wrap').forEach((wrap) => {
+    const id = wrap.dataset.wrapId;
+    const a = vault.accounts.find((x) => x.id === id);
+    if (!a) return;
+    const card = wrap.querySelector('.card');
+
+    attachSwipeListeners(card, a);
+
+    const editBtn = wrap.querySelector('[data-swipe-edit]');
+    if (editBtn) editBtn.onclick = (e) => { e.stopPropagation(); resetOpenSwipe(); openEdit(ctx, id); };
+
+    const pinBtn = wrap.querySelector('[data-swipe-pin]');
+    if (pinBtn) pinBtn.onclick = (e) => {
+      e.stopPropagation(); resetOpenSwipe();
+      updateAccount(vault, id, { pinned: !a.pinned });
+      commit();
+      toast(a.pinned ? 'আনপিন করা হয়েছে' : 'পিন করা হয়েছে ⭐');
+    };
+
+    const delBtn = wrap.querySelector('[data-swipe-del]');
+    if (delBtn) delBtn.onclick = async (e) => {
+      e.stopPropagation(); resetOpenSwipe();
+      const ok = await confirmDialog('অ্যাকাউন্ট মুছবেন?', `${a.issuer || a.name || 'এই অ্যাকাউন্ট'} মুছে ফেললে ৩০ দিন রিসাইকেল বিনে থাকবে।`, 'মুছুন', true);
+      if (ok) {
+        deleteAccount(vault, id);
+        commit();
+        toast('রিসাইকেল বিনে সরানো হয়েছে 🗑️');
+      }
+    };
+
     card.onclick = async (e) => {
+      if (openSwipeCard) {
+        resetOpenSwipe();
+        return;
+      }
       const moveBtn = e.target.closest('[data-move]');
       if (moveBtn) {
         const dir = Number(moveBtn.dataset.move);
@@ -294,14 +443,15 @@ function render() {
       if (reorderMode) return;
       if (e.target.closest('[data-edit]')) return openEdit(ctx, id);
       if (e.target.closest('[data-next]')) {
-        const a = vault.accounts.find((x) => x.id === id);
-        updateAccount(vault, id, { counter: (a.counter || 0) + 1 }); return commit();
+        updateAccount(vault, id, { counter: (a.counter || 0) + 1 });
+        return commit();
       }
       const codeEl = card.querySelector('.code');
       if (settings.hideCodes && codeEl.classList.contains('hide')) { reveal(id); }
       if (settings.autoCopy) {
         const raw = codeEl.dataset.raw;
         if (raw && (await copyText(raw))) {
+          navigator.vibrate?.(25);
           card.classList.add('copied');
           const tag = card.querySelector(`[data-copied="${id}"]`);
           tag?.classList.remove('hidden');
@@ -393,6 +543,14 @@ async function tryBiometricUnlock() {
 $('#fab').onclick = () => openAddMenu(ctx);
 $('#menuBtn').onclick = () => openMenu(ctx);
 $('#syncBtn').onclick = () => openSync(ctx);
+const tgBtn = $('#tgBtn');
+if (tgBtn) tgBtn.onclick = () => openTelegramDialog(ctx);
+const privBtn = $('#privacyBtn');
+if (privBtn) privBtn.onclick = () => {
+  settings.hideCodes = !settings.hideCodes;
+  saveSettings();
+  toast(settings.hideCodes ? 'কোড লুকানো হয়েছে 🙈' : 'কোড দেখানো হচ্ছে 👁️');
+};
 $('#bannerSyncBtn').onclick = () => openSync(ctx);
 $('#bannerCloseBtn').onclick = () => {
   settings.bannerDismissed = true;

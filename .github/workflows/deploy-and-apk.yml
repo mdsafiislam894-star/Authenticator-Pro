@@ -61,6 +61,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Build Native Android APK (No URL Bar, Real Standalone App)
         run: |
+          mkdir -p android/app/src/main/assets
+          cp -r index.html manifest.webmanifest sw.js css js icons android/app/src/main/assets/
           keytool -genkeypair -v -keystore android.keystore -alias authpro \
             -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass authpro123 -keypass authpro123 \
