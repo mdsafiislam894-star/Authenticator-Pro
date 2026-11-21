@@ -10,64 +10,64 @@ import { updateAccount, deleteAccount } from './store.js';
 
 export const THEMES = [
   {
-    id: 'ocean-dew',
-    mode: 'light',
-    name: 'Aqua Dew (লাইট)',
-    tagline: 'স্বচ্ছ সকালের শিশির ও নীল জলপ্রপাত',
-    accent: '#2563eb',
-    previewGrad: 'linear-gradient(135deg, #cfe0ff, #eef2ff, #c9f3ee)',
-    cardBg: 'rgba(255, 255, 255, 0.75)',
-    textColor: '#0d1226',
-  },
-  {
-    id: 'midnight-obsidian',
+    id: 'nordic-aurora',
     mode: 'dark',
-    name: 'Obsidian Abyss (ডার্ক)',
-    tagline: 'ডিপ ওলেড ব্ল্যাক ও সাইবার নিয়ন',
-    accent: '#86a9ff',
-    previewGrad: 'linear-gradient(135deg, #070a14, #1c2d78, #0b5360)',
-    cardBg: 'rgba(255, 255, 255, 0.1)',
-    textColor: '#f4f6ff',
+    name: 'Nordic Aurora (ডার্ক)',
+    tagline: 'সুমেরু রাতের মেরুজ্যোতি ও পোলার অরোরা সায়ান',
+    accent: '#22d3ee',
+    previewGrad: 'linear-gradient(135deg, #040914, #064e3b, #1e1b4b)',
+    cardBg: 'rgba(6, 182, 212, 0.12)',
+    textColor: '#ecfeff',
   },
   {
-    id: 'rose-quartz',
+    id: 'liquid-champagne',
     mode: 'light',
-    name: 'Rose Quartz (লাইট)',
-    tagline: 'রোজ গোল্ড, শ্যাম্পেন ও সানসেট লাক্সারি',
+    name: 'Liquid Champagne (লাইট)',
+    tagline: 'ফ্রেঞ্চ শ্যাম্পেন আইভরি ও রাজকীয় গোল্ডেন পার্ল',
+    accent: '#b45309',
+    previewGrad: 'linear-gradient(135deg, #fbf5eb, #fef3c7, #fed7aa)',
+    cardBg: 'rgba(255, 253, 250, 0.82)',
+    textColor: '#78350f',
+  },
+  {
+    id: 'synthwave-neon',
+    mode: 'dark',
+    name: 'Synthwave Neon (ডার্ক)',
+    tagline: '৮০s রেট্রো-ফিউচার সাইবার গ্লাস ও হট ম্যাজেন্টা',
     accent: '#f43f5e',
-    previewGrad: 'linear-gradient(135deg, #ffe4e6, #fff1f2, #ffedd5)',
-    cardBg: 'rgba(255, 245, 248, 0.75)',
-    textColor: '#4c0519',
+    previewGrad: 'linear-gradient(135deg, #0d0218, #4a044e, #3b0764)',
+    cardBg: 'rgba(244, 63, 94, 0.12)',
+    textColor: '#fdf2f8',
   },
   {
-    id: 'cyber-matrix',
-    mode: 'dark',
-    name: 'Emerald Jade (ডার্ক)',
-    tagline: 'ম্যাট্রিক্স বায়ো-গ্লাস ও সাইবার এমারেল্ড',
-    accent: '#34d399',
-    previewGrad: 'linear-gradient(135deg, #03140d, #064e3b, #022c22)',
-    cardBg: 'rgba(52, 211, 153, 0.08)',
-    textColor: '#ecfdf5',
-  },
-  {
-    id: 'amethyst-royale',
-    mode: 'dark',
-    name: 'Amethyst Royale (ডার্ক)',
-    tagline: 'রাজকীয় ভেলভেট পার্পল ও কসমিক গ্যালাক্সি',
-    accent: '#c084fc',
-    previewGrad: 'linear-gradient(135deg, #0b0318, #3b0764, #581c87)',
-    cardBg: 'rgba(192, 132, 252, 0.09)',
-    textColor: '#faf5ff',
-  },
-  {
-    id: 'frosted-pearl',
+    id: 'matcha-zen',
     mode: 'light',
-    name: 'Frosted Pearl (লাইট)',
-    tagline: 'সুইস টাইটানিয়াম ও আইস গ্লাস মিনিমালিজম',
-    accent: '#0f172a',
-    previewGrad: 'linear-gradient(135deg, #f8fafc, #e2e8f0, #cbd5e1)',
-    cardBg: 'rgba(255, 255, 255, 0.88)',
-    textColor: '#0f172a',
+    name: 'Kyoto Matcha (লাইট)',
+    tagline: 'শান্ত জাপানিজ গ্রিন টি ও ব্যাম্বু মিস্ট কাঁচ',
+    accent: '#15803d',
+    previewGrad: 'linear-gradient(135deg, #f2f7f4, #dcfce7, #e0f2fe)',
+    cardBg: 'rgba(255, 255, 255, 0.85)',
+    textColor: '#14532d',
+  },
+  {
+    id: 'solar-flare',
+    mode: 'dark',
+    name: 'Solar Flare (ডার্ক)',
+    tagline: 'মহাজাগতিক স্পেস ব্ল্যাক ও প্রজ্বলিত প্লাজমা অ্যাম্বার',
+    accent: '#fb923c',
+    previewGrad: 'linear-gradient(135deg, #0d0604, #431407, #451a03)',
+    cardBg: 'rgba(251, 146, 60, 0.12)',
+    textColor: '#fff7ed',
+  },
+  {
+    id: 'royal-sapphire',
+    mode: 'dark',
+    name: 'Royal Sapphire (ডার্ক)',
+    tagline: 'ব্রিটিশ রয়্যাল নেভি ও ভেলভেট স্যাফায়ার কোবাল্ট',
+    accent: '#38bdf8',
+    previewGrad: 'linear-gradient(135deg, #020817, #1e3a8a, #172554)',
+    cardBg: 'rgba(56, 189, 248, 0.12)',
+    textColor: '#f0f9ff',
   },
 ];
 
@@ -78,10 +78,10 @@ export function openThemePicker(ctx) {
 
   const m = openModal(`
     <h3>🎨 প্রিমিয়াম থিম ও লিকুইড স্টাইল</h3>
-    <p class="hint">প্রতিটি থিমের রয়েছে সম্পূর্ণ ভিন্ন কালার ভাইব, কাঁচের স্বচ্ছতা এবং রিফ্লেক্টিভ অরবস।</p>
+    <p class="hint">প্রতিটি থিমের রয়েছে সম্পূর্ণ ভিন্ন লাক্সারি ভাইব, কাঁচের স্বচ্ছতা এবং রিফ্লেক্টিভ অরবস।</p>
     <div class="theme-grid">
       ${THEMES.map((t) => {
-        const isCurrent = current === t.id || (current === 'auto' && resolved === t.mode && (t.id === 'ocean-dew' || t.id === 'midnight-obsidian'));
+        const isCurrent = current === t.id || (current === 'auto' && resolved === t.id) || (current === t.mode && (t.id === 'nordic-aurora' || t.id === 'liquid-champagne'));
         return `
         <div class="theme-card ${isCurrent ? 'selected' : ''}" data-theme-id="${t.id}">
           <div class="theme-preview" style="background:${t.previewGrad};color:${t.textColor}">
@@ -481,23 +481,25 @@ export function openTimeSyncDialog(ctx) {
   const isGood = Math.abs(driftMs) < 2500;
 
   const m = openModal(`
-    <h3>⏱️ টাইম সিঙ্ক ও ক্লক কারেকশন</h3>
+    <h3>⏱️ টাইম সিঙ্ক ও মোনোটোনিক টাইম লক</h3>
     <div style="text-align:center;padding:16px 0 10px">
       <div style="display:inline-block;padding:16px 24px;border-radius:24px;background:var(--card2);border:1px solid ${isGood ? 'var(--ok)' : 'var(--danger)'}">
-        <span style="font-size:36px">${isGood ? '⏰' : '⚠️'}</span>
+        <span style="font-size:36px">${isGood ? '🔒' : '⚠️'}</span>
         <div style="font-size:18px;font-weight:800;color:var(--text);margin-top:6px">
           Drift Offset: <span id="tsDriftDisplay">${driftSec > 0 ? '+' : ''}${driftSec}s</span>
         </div>
         <small style="color:${isGood ? 'var(--ok)' : 'var(--danger)'};font-weight:700">
-          ${isGood ? 'ডিভাইস ক্লক সঠিক ও সিঙ্কড ✅' : 'ক্লক ব্যবধান বেশি — ওটিপি কোড ব্যর্থ হতে পারে!'}
+          ${isGood ? 'টাইম লক সক্রিয় ✅ (ফোন ঘড়ি পরিবর্তন সুরক্ষিত)' : 'ক্লক ব্যবধান বেশি — ওটিপি কোড ব্যর্থ হতে পারে!'}
         </small>
       </div>
     </div>
-    <p class="hint">যদি আপনার ফোনের সময় কয়েক সেকেন্ড এদিক ওদিক হয়, তবে ২FA কোড ভুল দেখাতে পারে। এই ফিচারটি সরাসরি আন্তর্জাতিক পারমাণবিক ঘড়ির সাথে সময় মিলিয়ে কোড নিখুঁত রাখে।</p>
+    <div style="background:var(--card);padding:12px 14px;border-radius:16px;border:1px solid var(--line);margin:10px 0;font-size:12.5px;color:var(--muted);line-height:1.5">
+      💡 <b>মোনোটোনিক টাইম লক প্রযুক্তি:</b> আপনার ফোনের সময় আপনি ইচ্ছামতো পরিবর্তন করলেও (ঘণ্টা/দিন আগুপিছু করলেও) অ্যাপটির ইন্টারনাল মোনোটোনিক টাইমার আসল সময়কে লক করে রাখে, ফলে আপনার ২FA কোড কখনো ভুল হবে না।
+    </div>
     
     <div class="row" style="margin-top:16px">
       <button class="btn block" id="tsClose">বন্ধ করুন</button>
-      <button class="btn primary block" id="tsSyncBtn">🔄 এখনই টাইম সিঙ্ক করুন</button>
+      <button class="btn primary block" id="tsSyncBtn">🔄 এখনই টাইম সিঙ্ক ও লক করুন</button>
     </div>
   `);
 
@@ -510,12 +512,12 @@ export function openTimeSyncDialog(ctx) {
     playGlassTap(ctx.settings);
     const res = await syncNetworkTime();
     q('#tsSyncBtn').disabled = false;
-    q('#tsSyncBtn').textContent = '🔄 এখনই টাইম সিঙ্ক করুন';
+    q('#tsSyncBtn').textContent = '🔄 এখনই টাইম সিঙ্ক ও লক করুন';
 
     if (res.success) {
       playSuccessChime(ctx.settings);
       haptic('success');
-      toast(`টাইম সিঙ্ক সফল! অফসেট: ${res.driftSec}s ✅`);
+      toast(`টাইম সিঙ্ক ও লক সফল! অফসেট: ${res.driftSec}s 🔒`);
       q('#tsDriftDisplay').textContent = `${Number(res.driftSec) > 0 ? '+' : ''}${res.driftSec}s`;
       ctx.render();
     } else {

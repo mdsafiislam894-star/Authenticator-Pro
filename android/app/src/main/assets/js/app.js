@@ -44,15 +44,15 @@ let swRegistration = null;
 const revealed = new Map(); // id -> timeout for "hide codes" mode
 
 function isLightTheme(t) {
-  return t === 'ocean-dew' || t === 'rose-quartz' || t === 'frosted-pearl' || t === 'light';
+  return t === 'liquid-champagne' || t === 'matcha-zen' || t === 'light';
 }
 
 function resolvedTheme() {
   if (settings.theme === 'auto') {
-    return matchMedia('(prefers-color-scheme: light)').matches ? 'ocean-dew' : 'midnight-obsidian';
+    return matchMedia('(prefers-color-scheme: light)').matches ? 'liquid-champagne' : 'nordic-aurora';
   }
-  if (settings.theme === 'light') return 'ocean-dew';
-  if (settings.theme === 'dark') return 'midnight-obsidian';
+  if (settings.theme === 'light') return 'liquid-champagne';
+  if (settings.theme === 'dark') return 'nordic-aurora';
   return settings.theme;
 }
 
@@ -67,7 +67,7 @@ function applyTheme() {
   document.documentElement.dataset.theme = t;
   const isLight = isLightTheme(t);
   const meta = $('#themeMeta');
-  if (meta) meta.setAttribute('content', isLight ? '#f8fafc' : '#060812');
+  if (meta) meta.setAttribute('content', isLight ? '#faf7f2' : '#040914');
   const tb = $('#themeBtn');
   if (tb) {
     tb.textContent = isLight ? '🌙' : '☀️';
@@ -194,6 +194,8 @@ async function doSync(manual = false) {
     vault = r.vault; render(); refreshSyncDot();
     playSuccessChime(settings);
     haptic('success');
+    // Lock monotonic time to true network time on every sync
+    syncNetworkTime().catch(() => {});
     if (manual) toast(r.status === 'unchanged' ? 'সব আপ-টু-ডেট ✅' : 'সিঙ্ক সম্পন্ন ✅');
     else if (r.status === 'merged') toast('অন্য ডিভাইস থেকে পরিবর্তন এসেছে ☁️');
   } catch (e) {
@@ -205,6 +207,7 @@ async function doSync(manual = false) {
 function commit() {
   saveVault(vault);
   render();
+  syncNetworkTime().catch(() => {});
   sync.scheduleSync(() => vault, (r) => { vault = r.vault; render(); refreshSyncDot(); },
     (e) => { refreshSyncDot('err'); toast('অটো-ব্যাকআপ ব্যর্থ: ' + e.message); });
 }
@@ -666,7 +669,7 @@ if (themeBtn) {
       clearTimeout(pressTimer);
       pressTimer = null;
       const current = resolvedTheme();
-      settings.theme = isLightTheme(current) ? 'midnight-obsidian' : 'ocean-dew';
+      settings.theme = isLightTheme(current) ? 'nordic-aurora' : 'liquid-champagne';
       playDropletSound(settings);
       haptic('light');
       saveSettings();

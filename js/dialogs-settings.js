@@ -29,7 +29,7 @@ export function openMenu(ctx) {
     <button class="menu-item" data-a="batch"><span class="ico">☑️</span><span>ব্যাচ মোড (একাধিক নির্বাচন)<small>একসাথে একাধিক একাউন্ট পিন, গ্রুপ বা ব্যাকআপ</small></span></button>
     <button class="menu-item" data-a="telegram"><span class="ico">✈️</span><span>টেলিগ্রাম ক্লাউড ব্যাকআপ<small>${tgReady ? '✅ বট চ্যাটে ব্যাকআপ চালু' : 'বট টোকেন ও চ্যাট আইডি যুক্ত করুন'}</small></span></button>
     <button class="menu-item" data-a="sync"><span class="ico">☁️</span><span>Google ব্যাকআপ ও সিঙ্ক<small>${user ? esc(user.email) : 'Continue with Google দিয়ে কানেক্ট করুন'}</small></span></button>
-    <button class="menu-item" data-a="theme"><span class="ico">${ctx.resolvedTheme().includes('ocean') || ctx.resolvedTheme().includes('light') || ctx.resolvedTheme().includes('quartz') || ctx.resolvedTheme().includes('pearl') ? '🌙' : '☀️'}</span><span>${ctx.resolvedTheme().includes('ocean') || ctx.resolvedTheme().includes('light') || ctx.resolvedTheme().includes('quartz') || ctx.resolvedTheme().includes('pearl') ? 'ডার্ক মোডে যান' : 'লাইট মোডে যান'}</span></button>
+    <button class="menu-item" data-a="theme"><span class="ico">${ctx.resolvedTheme().includes('champagne') || ctx.resolvedTheme().includes('matcha') || ctx.resolvedTheme().includes('light') ? '🌙' : '☀️'}</span><span>${ctx.resolvedTheme().includes('champagne') || ctx.resolvedTheme().includes('matcha') || ctx.resolvedTheme().includes('light') ? 'ডার্ক মোডে যান' : 'লাইট মোডে যান'}</span></button>
     <button class="menu-item" data-a="privacy"><span class="ico">${ctx.settings.hideCodes ? '👁️' : '🙈'}</span><span>${ctx.settings.hideCodes ? 'কোড দেখান' : 'কোড লুকান (প্রাইভেসি মোড)'}<small>${ctx.settings.hideCodes ? 'এখন কোড লুকানো আছে' : 'ট্যাপ না করা পর্যন্ত কোড ব্লার থাকবে'}</small></span></button>
     <button class="menu-item" data-a="print"><span class="ico">🖨️</span><span>ইমার্জেন্সি ভল্ট প্রিন্ট শিট<small>অফলাইন পেপার ব্যাকআপ / PDF</small></span></button>
     <button class="menu-item" data-a="gaExport"><span class="ico">📤</span><span>Google Authenticator-এ এক্সপোর্ট<small>অন্য ফোনে নিতে Export QR তৈরি করুন</small></span></button>
@@ -63,8 +63,8 @@ export function openMenu(ctx) {
       print: () => ctx.printEmergencySheet(),
       theme: () => {
         const cur = ctx.resolvedTheme();
-        const isL = cur.includes('ocean') || cur.includes('light') || cur.includes('quartz') || cur.includes('pearl');
-        ctx.settings.theme = isL ? 'midnight-obsidian' : 'ocean-dew';
+        const isL = cur.includes('champagne') || cur.includes('matcha') || cur.includes('light');
+        ctx.settings.theme = isL ? 'nordic-aurora' : 'liquid-champagne';
         ctx.saveSettings();
       },
       privacy: () => {
