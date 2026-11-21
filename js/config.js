@@ -3,7 +3,8 @@
 
 export const APP_VERSION = '3.0.0';
 
-export const GOOGLE_CLIENT_ID = '685192227575-g6vens1ihouer90l2sbtpe24oav14e8a.apps.googleusercontent.com';
+// Your Google Cloud Console OAuth 2.0 Web Client ID
+export const GOOGLE_CLIENT_ID = '27606258719-02kr9qcjnelt3j5hloq2sgsjutlc2ol1.apps.googleusercontent.com';
 
 // Drive-এ শুধু এই অ্যাপের নিজস্ব লুকানো ফোল্ডারে ফাইল থাকবে (appDataFolder)।
 // আপনার অন্য কোনো Drive ফাইল অ্যাপ দেখতে পারে না।

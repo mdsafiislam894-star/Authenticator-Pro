@@ -58,93 +58,19 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Install & Configure Bubblewrap
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build Native Android APK (No URL Bar, Real Standalone App)
         run: |
-          npm install -g @bubblewrap/cli
-          mkdir -p "$HOME/.bubblewrap"
-          SDK_PATH="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
-          sudo ln -sf "$SDK_PATH/cmdline-tools/latest" "$SDK_PATH/tools" 2>/dev/null || true
-          printf '{"jdkPath":"%s","androidSdkPath":"%s"}\n' "$JAVA_HOME" "$SDK_PATH" > "$HOME/.bubblewrap/config.json"
-          bubblewrap updateConfig --jdkPath="$JAVA_HOME" --androidSdkPath="$SDK_PATH" || true
-      - name: Build Signed APK
-        run: |
-          mkdir -p android-twa
-          cd android-twa
           keytool -genkeypair -v -keystore android.keystore -alias authpro \
             -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass authpro123 -keypass authpro123 \
             -dname "CN=Authenticator Pro, OU=App, O=Safi, L=Rajshahi, ST=Rajshahi, C=BD"
-          cat > twa-manifest.json << 'EOF'
-          {
-            "packageId": "tech.mdsafiislam.authenticatorpro",
-            "host": "mdsafiislam894-star.github.io",
-            "name": "Authenticator Pro",
-            "launcherName": "AuthPro",
-            "display": "standalone",
-            "themeColor": "#070A14",
-            "themeColorDark": "#070A14",
-            "navigationColor": "#070A14",
-            "navigationColorDark": "#070A14",
-            "navigationDividerColor": "#070A14",
-            "navigationDividerColorDark": "#070A14",
-            "backgroundColor": "#070A14",
-            "enableNotifications": false,
-            "startUrl": "/Authenticator-Pro/",
-            "iconUrl": "https://mdsafiislam894-star.github.io/Authenticator-Pro/icons/icon-512.png",
-            "maskableIconUrl": "https://mdsafiislam894-star.github.io/Authenticator-Pro/icons/icon-maskable-512.png",
-            "splashScreenFadeOutDuration": 300,
-            "signingKey": { "path": "./android.keystore", "alias": "authpro" },
-            "appVersionName": "3.0.0",
-            "appVersionCode": 3,
-            "shortcuts": [],
-            "generatorApp": "bubblewrap-cli",
-            "webManifestUrl": "https://mdsafiislam894-star.github.io/Authenticator-Pro/manifest.webmanifest",
-            "fallbackType": "customtabs",
-            "features": {},
-            "alphaDependencies": { "enabled": false },
-            "enableSiteSettingsShortcut": true,
-            "isChromeOSOnly": false,
-            "isMetaQuest": false,
-            "fullScopeUrl": "https://mdsafiislam894-star.github.io/Authenticator-Pro/",
-            "minSdkVersion": 24,
-            "orientation": "portrait"
-          }
-          EOF
-
-          for i in {1..30}; do
-            if curl -sSf -I https://mdsafiislam894-star.github.io/Authenticator-Pro/icons/icon-512.png > /dev/null 2>&1; then
-              echo "Pages icons reachable!"
-              break
-            fi
-            echo "Waiting for Pages deployment to be reachable (attempt $i)..."
-            sleep 3
-          done
-
-          yes | bubblewrap update --skipPwaValidation --skipVersionUpgrade || bubblewrap update --skipPwaValidation
-          yes | BUBBLEWRAP_KEYSTORE_PASSWORD=authpro123 BUBBLEWRAP_KEY_PASSWORD=authpro123 \
-            bubblewrap build --skipPwaValidation --skipSigning=false \
-            --keyStorePassword=authpro123 --keyPassword=authpro123 || ./gradlew assembleRelease
-
+          cd android
+          gradle wrapper --gradle-version 8.11.1
+          chmod +x gradlew
+          ./gradlew assembleRelease
           mkdir -p ../apk-out
-          SDK_PATH="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
-          BUILD_TOOLS_DIR=$(ls -d $SDK_PATH/build-tools/* | sort -V | tail -n 1)
-          RAW_APK=$(find . -name "*.apk" | head -n 1)
-
-          if "$BUILD_TOOLS_DIR/apksigner" verify "$RAW_APK" >/dev/null 2>&1; then
-            echo "APK is already signed!"
-            cp "$RAW_APK" ../apk-out/Authenticator-Pro-v3.0.0.apk
-          else
-            echo "Signing APK with apksigner..."
-            "$BUILD_TOOLS_DIR/apksigner" sign --ks android.keystore --ks-key-alias authpro \
-              --ks-pass pass:authpro123 --key-pass pass:authpro123 \
-              --out ../apk-out/Authenticator-Pro-v3.0.0.apk "$RAW_APK"
-          fi
-
-          echo "Verifying final APK signature..."
-          "$BUILD_TOOLS_DIR/apksigner" verify -v ../apk-out/Authenticator-Pro-v3.0.0.apk
+          cp app/build/outputs/apk/release/app-release.apk ../apk-out/Authenticator-Pro-v3.0.0.apk
           ls -la ../apk-out
       - uses: actions/upload-artifact@v4
         with:

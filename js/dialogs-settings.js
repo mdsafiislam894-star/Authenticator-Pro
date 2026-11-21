@@ -77,13 +77,13 @@ export function openSync(ctx) {
     <h3>☁️ Google দিয়ে অটো-ব্যাকআপ</h3>
     <p class="hint"><b>Continue with Google</b> চেপে আপনার Gmail সিলেক্ট করলেই Google Drive-এর <b>লুকানো appDataFolder</b>-এ সব কোড AES-256-GCM এনক্রিপ্ট হয়ে অটো-ব্যাকআপ হবে। অন্য ফোনে লগইন করলেই সব ফিরে আসবে।</p>
     <button class="btn google-btn block" id="in">${GOOGLE_G_SVG}<span>Continue with Google</span></button>
-    ${configured ? '' : `
-      <details class="glass-details" open>
-        <summary>⚙️ Google Client ID সেটআপ (প্রথমবার)</summary>
-        <p class="hint" style="margin-top:8px">Google Cloud Console-এর Web OAuth Client ID এখানে বসাতে পারেন অথবা <code>js/config.js</code>-এ স্থায়ীভাবে যুক্ত করুন।</p>
-        <div class="field"><input id="cid" value="${esc(drive.getClientId())}" placeholder="xxxx.apps.googleusercontent.com"></div>
-        <button class="btn sm primary" id="saveCid">Client ID সেভ</button>
-      </details>`}`);
+    <details class="glass-details" ${configured ? '' : 'open'}>
+      <summary>⚙️ Google Client ID সেটিংস</summary>
+      <p class="hint" style="margin-top:8px">Google Cloud Console-এর Web OAuth Client ID এখানে বসাতে পারেন।<br><b>Authorized JavaScript origins:</b> <code>https://mdsafiislam894-star.github.io</code></p>
+      <div class="field"><input id="cid" value="${esc(drive.getClientId())}" placeholder="xxxx.apps.googleusercontent.com"></div>
+      <button class="btn sm primary" id="saveCid">Client ID সেভ</button>
+    </details>
+    <p class="hint" style="margin-top:14px;border-top:1px solid rgba(255,255,255,0.08);padding-top:10px">💡 <b>Google ছাড়াও অফলাইনে সম্পূর্ণ ব্যাকআপ করা যায়!</b><br>মেনু থেকে <b>'ব্যাকআপ ফাইল নামান (এনক্রিপ্টেড)'</b> দিয়ে কোনো Google ক্লাউড ছাড়াই ফাইল নামিয়ে রাখতে পারেন।</p>`);
 
   const q = (s) => m.el.querySelector(s);
   if (q('#saveCid')) q('#saveCid').onclick = () => {
