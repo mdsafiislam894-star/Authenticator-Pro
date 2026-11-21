@@ -4,7 +4,11 @@
 const B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 
 export function base32Decode(input) {
-  const clean = String(input).toUpperCase().replace(/[\s=-]+/g, '');
+  // Clean whitespace, dashes, equal signs, and auto-correct common OCR/human typos (0 -> O, 1 -> I, 8 -> B)
+  let clean = String(input || '').toUpperCase().replace(/[\s=-]+/g, '')
+    .replace(/0/g, 'O')
+    .replace(/1/g, 'I')
+    .replace(/8/g, 'B');
   let bits = 0, value = 0;
   const out = [];
   for (const ch of clean) {

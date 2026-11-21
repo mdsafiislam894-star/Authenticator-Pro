@@ -16,6 +16,7 @@ import {
 import { initPhysics } from './physics.js';
 import { syncNetworkTime, getCorrectedNow } from './timesync.js';
 import { recordCopyEvent } from './analytics.js';
+import { renderAccountAvatar } from './brand-icons.js';
 
 // ---------- state ----------
 let vault = loadVault();
@@ -351,7 +352,7 @@ function cardHtml(a, idx, total) {
       <button class="swipe-btn del-btn" data-swipe-del="${a.id}" title="মুছুন">🗑️</button>
     </div>
     <div class="card ${batchMode && selectedBatchIds.has(a.id) ? 'selected-for-batch' : ''}" data-id="${a.id}">
-      <div class="avatar" style="background:${avatarColor(title)}">${esc(title[0].toUpperCase())}</div>
+      ${renderAccountAvatar(a)}
       <div class="info">
         <div class="info-top">
           <div class="issuer">${a.pinned ? '⭐ ' : ''}${esc(title)}</div>

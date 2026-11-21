@@ -18,7 +18,28 @@
   <!-- App lock (PIN + Biometric) -->
   <div id="lock" class="lock hidden">
     <div class="lock-box">
-      <div class="logo">🔐</div>
+      <div class="logo">
+        <svg viewBox="0 0 100 100" class="master-app-logo" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="shieldGradLock" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#38bdf8"/>
+              <stop offset="50%" stop-color="#2563eb"/>
+              <stop offset="100%" stop-color="#1e1b4b"/>
+            </linearGradient>
+            <linearGradient id="lockCoreGradLock" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#ffffff"/>
+              <stop offset="60%" stop-color="#a5f3fc"/>
+              <stop offset="100%" stop-color="#38bdf8"/>
+            </linearGradient>
+          </defs>
+          <path d="M50 8 L84 22 C84 62 50 88 50 92 C50 88 16 62 16 22 Z" fill="url(#shieldGradLock)" stroke="rgba(255,255,255,0.7)" stroke-width="2.5"/>
+          <path d="M50 15 L78 27 C78 58 50 80 50 84 C50 80 22 58 22 27 Z" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-dasharray="4 2"/>
+          <circle cx="50" cy="45" r="14" fill="none" stroke="url(#lockCoreGradLock)" stroke-width="3.5"/>
+          <path d="M50 31 C43 31 38 36 38 43 C38 47 40 51 43 53 L41 65 C41 66.5 42.5 68 44 68 L56 68 C57.5 68 59 66.5 59 65 L57 53 C60 51 62 47 62 43 C62 36 57 31 50 31 Z" fill="url(#lockCoreGradLock)"/>
+          <circle cx="50" cy="43" r="3.5" fill="#070a14"/>
+          <path d="M50 46.5 L50 56" stroke="#070a14" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+      </div>
       <h2>Authenticator Pro</h2>
       <p id="lockMsg">PIN দিন</p>
       <input id="lockPin" type="password" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="••••">
@@ -30,7 +51,25 @@
   <!-- Floating Liquid Glass Header Pill -->
   <header class="topbar">
     <div class="brand">
-      <span class="logo-sm">🔐</span>
+      <span class="logo-sm">
+        <svg viewBox="0 0 100 100" class="master-app-logo" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="shieldGradTop" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#38bdf8"/>
+              <stop offset="50%" stop-color="#2563eb"/>
+              <stop offset="100%" stop-color="#1e1b4b"/>
+            </linearGradient>
+            <linearGradient id="lockCoreGradTop" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#ffffff"/>
+              <stop offset="60%" stop-color="#a5f3fc"/>
+              <stop offset="100%" stop-color="#38bdf8"/>
+            </linearGradient>
+          </defs>
+          <path d="M50 8 L84 22 C84 62 50 88 50 92 C50 88 16 62 16 22 Z" fill="url(#shieldGradTop)" stroke="rgba(255,255,255,0.7)" stroke-width="2.5"/>
+          <circle cx="50" cy="45" r="14" fill="none" stroke="url(#lockCoreGradTop)" stroke-width="3.5"/>
+          <path d="M50 31 C43 31 38 36 38 43 C38 47 40 51 43 53 L41 65 C41 66.5 42.5 68 44 68 L56 68 C57.5 68 59 66.5 59 65 L57 53 C60 51 62 47 62 43 C62 36 57 31 50 31 Z" fill="url(#lockCoreGradTop)"/>
+        </svg>
+      </span>
       <span>Authenticator Pro</span>
     </div>
     <div class="top-actions">

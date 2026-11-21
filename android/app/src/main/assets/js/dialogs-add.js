@@ -132,10 +132,21 @@ export function openPaste(ctx) {
 export function openManual(ctx) {
   const groups = ctx.vault.groups || [];
   const m = openModal(`
-    <h3>নতুন অ্যাকাউন্ট</h3>
+    <h3>নতুন অ্যাকাউন্ট যুক্ত করুন</h3>
+    <div style="margin-bottom:12px">
+      <span style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:6px">জনপ্রিয় সার্ভিস (১-ট্যাপ প্রিসেট):</span>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <button type="button" class="chip" data-iss="Google">🌐 Google</button>
+        <button type="button" class="chip" data-iss="GitHub">🐱 GitHub</button>
+        <button type="button" class="chip" data-iss="Binance">🪙 Binance</button>
+        <button type="button" class="chip" data-iss="Microsoft">🪟 Microsoft</button>
+        <button type="button" class="chip" data-iss="Telegram">✈️ Telegram</button>
+        <button type="button" class="chip" data-iss="Discord">🎮 Discord</button>
+      </div>
+    </div>
     <div class="field"><label>সার্ভিসের নাম (Issuer)</label><input id="issuer" placeholder="Google, GitHub, Binance…"></div>
     <div class="field"><label>অ্যাকাউন্ট (ইমেইল/ইউজারনেম)</label><input id="name" placeholder="me@gmail.com"></div>
-    <div class="field"><label>Secret key (Base32)</label><input id="secret" autocapitalize="characters" autocomplete="off" placeholder="JBSW Y3DP EHPK 3PXP"></div>
+    <div class="field"><label>Secret key (Base32)</label><input id="secret" autocapitalize="characters" autocomplete="off" placeholder="যেমন: JL44 E5AL F4MJ EJQ0"></div>
     <div class="row">
       <div class="field"><label>গ্রুপ (ঐচ্ছিক)</label><input id="group" list="mgl" placeholder="Work / Personal">
         <datalist id="mgl">${groups.map((g) => `<option value="${esc(g)}">`).join('')}</datalist></div>
@@ -147,10 +158,20 @@ export function openManual(ctx) {
       <div class="field"><label>পিরিয়ড</label><input id="period" type="number" value="30" min="5" max="120"></div>
     </div>
     <button class="btn primary block" id="ok">সেভ করুন</button>`);
+  
+  m.el.querySelectorAll('[data-iss]').forEach((btn) => {
+    btn.onclick = () => {
+      m.el.querySelector('#issuer').value = btn.dataset.iss;
+      m.el.querySelector('#secret').focus();
+    };
+  });
+
   const g = (id) => m.el.querySelector('#' + id).value.trim();
   m.el.querySelector('#ok').onclick = () => {
-    const secret = g('secret').replace(/\s+/g, '').toUpperCase();
-    if (!isValidSecret(secret)) return toast('Secret key সঠিক নয়');
+    // Sanitize spaces, dashes, equal signs and auto-correct 0 -> O, 1 -> I
+    const secret = g('secret').replace(/[\s=-]+/g, '').toUpperCase()
+      .replace(/0/g, 'O').replace(/1/g, 'I');
+    if (!isValidSecret(secret)) return toast('Secret key সঠিক নয় (কমপক্ষে ১৬ অক্ষরের Base32 দিন)');
     if (!g('issuer') && !g('name')) return toast('নাম লিখুন');
     const type = g('type');
     const group = g('group');
@@ -159,7 +180,7 @@ export function openManual(ctx) {
       issuer: g('issuer'), name: g('name'), secret, type, group,
       digits: type === 'steam' ? 5 : +g('digits'), algorithm: g('algorithm'), period: +g('period') || 30,
     }]);
-    ctx.commit(); m.close(); toast('যোগ হয়েছে ✅');
+    ctx.commit(); m.close(); toast('অ্যাকাউন্ট যুক্ত হয়েছে ✅');
   };
 }
 
