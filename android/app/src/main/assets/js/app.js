@@ -207,6 +207,7 @@ const ctx = {
   render: () => render(),
   settings,
   saveSettings,
+  resolvedTheme: () => resolvedTheme(),
   doSync,
   hashPin,
   refreshSyncDot,
@@ -389,7 +390,8 @@ function attachSwipeListeners(card, a) {
 
 function render() {
   const list = visibleAccounts();
-  $('#sort').value = settings.sort;
+  const sortEl = $('#sort');
+  if (sortEl) sortEl.value = settings.sort;
   $('#reorderBar').classList.toggle('hidden', !reorderMode);
   renderChips();
   $('#empty').classList.toggle('hidden', vault.accounts.length > 0);
@@ -540,38 +542,70 @@ async function tryBiometricUnlock() {
 }
 
 // ---------- boot ----------
-$('#fab').onclick = () => openAddMenu(ctx);
-$('#menuBtn').onclick = () => openMenu(ctx);
-$('#syncBtn').onclick = () => openSync(ctx);
-const tgBtn = $('#tgBtn');
-if (tgBtn) tgBtn.onclick = () => openTelegramDialog(ctx);
-const privBtn = $('#privacyBtn');
-if (privBtn) privBtn.onclick = () => {
-  settings.hideCodes = !settings.hideCodes;
-  saveSettings();
-  toast(settings.hideCodes ? 'কোড লুকানো হয়েছে 🙈' : 'কোড দেখানো হচ্ছে 👁️');
-};
-$('#bannerSyncBtn').onclick = () => openSync(ctx);
-$('#bannerCloseBtn').onclick = () => {
+const fab = $('#fab');
+if (fab) fab.onclick = () => openAddMenu(ctx);
+const menuBtn = $('#menuBtn');
+if (menuBtn) menuBtn.onclick = () => openMenu(ctx);
+const syncBtn = $('#syncBtn');
+if (syncBtn) syncBtn.onclick = () => openSync(ctx);
+const bannerSyncBtn = $('#bannerSyncBtn');
+if (bannerSyncBtn) bannerSyncBtn.onclick = () => openSync(ctx);
+const bannerCloseBtn = $('#bannerCloseBtn');
+if (bannerCloseBtn) bannerCloseBtn.onclick = () => {
   settings.bannerDismissed = true;
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   refreshSyncDot();
 };
-$('#reorderDoneBtn').onclick = () => {
+const reorderDoneBtn = $('#reorderDoneBtn');
+if (reorderDoneBtn) reorderDoneBtn.onclick = () => {
   reorderMode = false;
   render();
   refreshSyncDot();
   toast('সাজানো সেভ হয়েছে ✅');
 };
-$('#themeBtn').onclick = () => {
-  settings.theme = resolvedTheme() === 'light' ? 'dark' : 'light';
-  saveSettings();
-};
-$('#search').oninput = (e) => { query = e.target.value.trim(); render(); };
-$('#sort').onchange = (e) => { settings.sort = e.target.value; saveSettings(); };
-$('#lockBtn').onclick = tryUnlock;
-$('#bioBtn').onclick = tryBiometricUnlock;
-$('#lockPin').onkeydown = (e) => { if (e.key === 'Enter') tryUnlock(); };
+
+// Search toggle & inputs
+const searchToggleBtn = $('#searchToggleBtn');
+const searchBarWrap = $('#searchBarWrap');
+const searchInput = $('#search');
+const searchCloseBtn = $('#searchCloseBtn');
+
+if (searchToggleBtn && searchBarWrap) {
+  searchToggleBtn.onclick = () => {
+    searchBarWrap.classList.toggle('hidden');
+    if (!searchBarWrap.classList.contains('hidden')) {
+      searchInput?.focus();
+    } else {
+      query = '';
+      if (searchInput) searchInput.value = '';
+      render();
+    }
+  };
+}
+if (searchCloseBtn && searchBarWrap) {
+  searchCloseBtn.onclick = () => {
+    searchBarWrap.classList.add('hidden');
+    query = '';
+    if (searchInput) searchInput.value = '';
+    render();
+  };
+}
+if (searchInput) {
+  searchInput.oninput = (e) => {
+    query = e.target.value.trim();
+    render();
+  };
+}
+
+const sortSelect = $('#sort');
+if (sortSelect) sortSelect.onchange = (e) => { settings.sort = e.target.value; saveSettings(); };
+
+const lockBtn = $('#lockBtn');
+if (lockBtn) lockBtn.onclick = tryUnlock;
+const bioBtn = $('#bioBtn');
+if (bioBtn) bioBtn.onclick = tryBiometricUnlock;
+const lockPin = $('#lockPin');
+if (lockPin) lockPin.onkeydown = (e) => { if (e.key === 'Enter') tryUnlock(); };
 
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {

@@ -23,6 +23,8 @@ export function openMenu(ctx) {
     ${ctx.canInstall ? '<button class="menu-item" data-a="install"><span class="ico">📲</span><span>ফোনে অ্যাপ ইনস্টল করুন<small>আসল অ্যাপের মতো হোম স্ক্রিনে যুক্ত হবে</small></span></button>' : ''}
     <button class="menu-item" data-a="telegram"><span class="ico">✈️</span><span>টেলিগ্রাম ক্লাউড ব্যাকআপ<small>${tgReady ? '✅ বট চ্যাটে ব্যাকআপ চালু' : 'বট টোকেন ও চ্যাট আইডি যুক্ত করুন'}</small></span></button>
     <button class="menu-item" data-a="sync"><span class="ico">☁️</span><span>Google ব্যাকআপ ও সিঙ্ক<small>${user ? esc(user.email) : 'Continue with Google দিয়ে কানেক্ট করুন'}</small></span></button>
+    <button class="menu-item" data-a="theme"><span class="ico">${ctx.resolvedTheme() === 'light' ? '🌙' : '☀️'}</span><span>${ctx.resolvedTheme() === 'light' ? 'ডার্ক মোডে যান' : 'লাইট মোডে যান'}</span></button>
+    <button class="menu-item" data-a="privacy"><span class="ico">${ctx.settings.hideCodes ? '👁️' : '🙈'}</span><span>${ctx.settings.hideCodes ? 'কোড দেখান' : 'কোড লুকান (প্রাইভেসি মোড)'}<small>${ctx.settings.hideCodes ? 'এখন কোড লুকানো আছে' : 'ট্যাপ না করা পর্যন্ত কোড ব্লার থাকবে'}</small></span></button>
     <button class="menu-item" data-a="gaExport"><span class="ico">📤</span><span>Google Authenticator-এ এক্সপোর্ট<small>অন্য ফোনে নিতে Export QR তৈরি করুন</small></span></button>
     <button class="menu-item" data-a="reorder"><span class="ico">↕️</span><span>অ্যাকাউন্ট সাজান (রিঅর্ডার)<small>ম্যানুয়াল অর্ডারে উপরে-নিচে নিন</small></span></button>
     <button class="menu-item" data-a="groups"><span class="ico">🗂️</span><span>গ্রুপ ম্যানেজ</span></button>
@@ -45,6 +47,15 @@ export function openMenu(ctx) {
       install: () => ctx.promptInstall(),
       telegram: () => openTelegramDialog(ctx),
       sync: () => openSync(ctx),
+      theme: () => {
+        ctx.settings.theme = ctx.resolvedTheme() === 'light' ? 'dark' : 'light';
+        ctx.saveSettings();
+      },
+      privacy: () => {
+        ctx.settings.hideCodes = !ctx.settings.hideCodes;
+        ctx.saveSettings();
+        toast(ctx.settings.hideCodes ? 'কোড লুকানো হয়েছে 🙈' : 'কোড দেখানো হচ্ছে 👁️');
+      },
       gaExport: () => openMigrationExport(ctx),
       reorder: () => ctx.startReorder(),
       groups: () => openGroupManager(ctx),
@@ -52,12 +63,6 @@ export function openMenu(ctx) {
       export: () => exportFile(ctx),
       plain: () => exportPlain(ctx),
       security: () => openSecurity(ctx),
-      lockNow: () => ctx.lockNow(),
-      update: () => ctx.checkForUpdate(),
-      about: () => openAbout(ctx),
-    })[a]?.();
-  }));
-}
       lockNow: () => ctx.lockNow(),
       update: () => ctx.checkForUpdate(),
       about: () => openAbout(ctx),
