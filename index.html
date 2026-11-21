@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#070a14" id="themeMeta">
+  <meta name="color-scheme" content="dark light">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <title>Authenticator Pro</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Animated background orbs that the Liquid Glass refracts -->
+  <div class="bg-orbs" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+  <!-- App lock (PIN + Biometric) -->
+  <div id="lock" class="lock hidden">
+    <div class="lock-box">
+      <div class="logo">🔐</div>
+      <h2>Authenticator Pro</h2>
+      <p id="lockMsg">PIN দিন</p>
+      <input id="lockPin" type="password" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="••••">
+      <button id="lockBtn" class="btn primary">আনলক</button>
+      <button id="bioBtn" class="btn block hidden">👆 বায়োমেট্রিক আনলক</button>
+    </div>
+  </div>
+
+  <!-- Floating Liquid Glass Header -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo-sm">🔐</span>
+      <span>Authenticator Pro</span>
+    </div>
+    <div class="top-actions">
+      <button id="themeBtn" class="icon-btn" title="ডার্ক/লাইট মোড">🌙</button>
+      <button id="syncBtn" class="icon-btn" title="Google ব্যাকআপ ও সিঙ্ক"><span id="syncIcon">☁️</span><span id="syncDot" class="dot off"></span></button>
+      <button id="menuBtn" class="icon-btn" title="মেনু">⋮</button>
+    </div>
+  </header>
+
+  <div class="searchbar">
+    <input id="search" type="search" placeholder="খুঁজুন (নাম, ইমেইল, গ্রুপ)…" autocomplete="off">
+    <select id="sort" title="সাজান">
+      <option value="manual">ম্যানুয়াল</option>
+      <option value="issuer">নাম A→Z</option>
+      <option value="recent">সর্বশেষ যোগ</option>
+    </select>
+  </div>
+  <nav id="groups" class="chips"></nav>
+
+  <!-- Quick Google Connect Banner (auto-hides once signed in) -->
+  <div id="syncBanner" class="sync-banner hidden">
+    <div class="sync-banner-text">
+      <b>☁️ অটো-ব্যাকআপ চালু করুন</b>
+      <span>Google-এ কানেক্ট করলে নতুন ফোনেই সব কোড ফেরত পাবেন</span>
+    </div>
+    <div class="sync-banner-actions">
+      <button id="bannerSyncBtn" class="btn primary sm">কানেক্ট</button>
+      <button id="bannerCloseBtn" class="mini" title="লুকান">✕</button>
+    </div>
+  </div>
+
+  <!-- Reorder Mode Bar -->
+  <div id="reorderBar" class="reorder-bar hidden">
+    <div class="sync-banner-text">
+      <b>↕️ সাজানো মোড চালু</b>
+      <span>↑ / ↓ চেপে অ্যাকাউন্ট উপরে বা নিচে নিন</span>
+    </div>
+    <button id="reorderDoneBtn" class="btn primary sm">সম্পন্ন</button>
+  </div>
+
+  <main id="list" class="list"></main>
+  <div id="empty" class="empty hidden">
+    <div class="empty-ico">🛡️</div>
+    <h3>কোনো অ্যাকাউন্ট নেই</h3>
+    <p>নিচের <b>+</b> চেপে QR স্ক্যান করুন, অথবা Google Authenticator থেকে সহজেই ইমপোর্ট করুন।</p>
+  </div>
+
+  <button id="fab" class="fab" title="অ্যাকাউন্ট যোগ করুন">+</button>
+
+  <!-- Dynamic Liquid Glass dialogs mount here -->
+  <div id="modalRoot"></div>
+  <div id="toast" class="toast hidden"></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,136 @@
+name: Deploy App & Build Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy-pages:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Unpack & Test
+        run: |
+          if [ -f authenticator-pro-v3-app.zip ] && [ ! -f index.html ]; then
+            unzip -o authenticator-pro-v3-app.zip -d _tmp
+            cp -r _tmp/authenticator-pro/. .
+            sed -i 's|/authenticator-pro/|/Authenticator-Pro/|g' manifest.webmanifest
+          fi
+          node tests/test.mjs
+      - uses: actions/configure-pages@v5
+      - name: Assemble site
+        run: |
+          mkdir -p _site
+          cp -r index.html manifest.webmanifest sw.js css js icons _site/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  build-apk:
+    needs: deploy-pages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install & Configure Bubblewrap
+        run: |
+          npm install -g @bubblewrap/cli
+          mkdir -p "$HOME/.bubblewrap"
+          SDK_PATH="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          printf '{"jdkPath":"%s","androidSdkPath":"%s"}\n' "$JAVA_HOME" "$SDK_PATH" > "$HOME/.bubblewrap/config.json"
+      - name: Build Signed APK
+        run: |
+          mkdir -p android-twa
+          cd android-twa
+          keytool -genkeypair -v -keystore android.keystore -alias authpro \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass authpro123 -keypass authpro123 \
+            -dname "CN=Authenticator Pro, OU=App, O=Safi, L=Rajshahi, ST=Rajshahi, C=BD"
+          cat > twa-manifest.json << 'EOF'
+          {
+            "packageId": "tech.mdsafiislam.authenticatorpro",
+            "host": "mdsafiislam894-star.github.io",
+            "name": "Authenticator Pro",
+            "launcherName": "AuthPro",
+            "display": "standalone",
+            "themeColor": "#070A14",
+            "themeColorDark": "#070A14",
+            "navigationColor": "#070A14",
+            "navigationColorDark": "#070A14",
+            "navigationDividerColor": "#070A14",
+            "navigationDividerColorDark": "#070A14",
+            "backgroundColor": "#070A14",
+            "enableNotifications": false,
+            "startUrl": "/Authenticator-Pro/",
+            "iconUrl": "https://mdsafiislam894-star.github.io/Authenticator-Pro/icons/icon-512.png",
+            "maskableIconUrl": "https://mdsafiislam894-star.github.io/Authenticator-Pro/icons/icon-maskable-512.png",
+            "splashScreenFadeOutDuration": 300,
+            "signingKey": { "path": "./android.keystore", "alias": "authpro" },
+            "appVersionName": "3.0.0",
+            "appVersionCode": 3,
+            "shortcuts": [],
+            "generatorApp": "bubblewrap-cli",
+            "webManifestUrl": "https://mdsafiislam894-star.github.io/Authenticator-Pro/manifest.webmanifest",
+            "fallbackType": "customtabs",
+            "features": {},
+            "alphaDependencies": { "enabled": false },
+            "enableSiteSettingsShortcut": true,
+            "isChromeOSOnly": false,
+            "isMetaQuest": false,
+            "fullScopeUrl": "https://mdsafiislam894-star.github.io/Authenticator-Pro/",
+            "minSdkVersion": 21,
+            "orientation": "portrait"
+          }
+          EOF
+
+          for i in {1..30}; do
+            if curl -sSf -I https://mdsafiislam894-star.github.io/Authenticator-Pro/icons/icon-512.png > /dev/null 2>&1; then
+              echo "Pages icons reachable!"
+              break
+            fi
+            echo "Waiting for Pages deployment to be reachable (attempt $i)..."
+            sleep 3
+          done
+
+          yes | bubblewrap update --skipPwaValidation --skipVersionUpgrade || bubblewrap update --skipPwaValidation
+          yes | BUBBLEWRAP_KEYSTORE_PASSWORD=authpro123 BUBBLEWRAP_KEY_PASSWORD=authpro123 \
+            bubblewrap build --skipPwaValidation --skipSigning=false \
+            --keyStorePassword=authpro123 --keyPassword=authpro123 || ./gradlew assembleRelease
+
+          mkdir -p ../apk-out
+          if [ -f app-release-signed.apk ]; then
+            cp app-release-signed.apk ../apk-out/Authenticator-Pro-v3.0.0.apk
+          elif [ -f app/build/outputs/apk/release/app-release-signed.apk ]; then
+            cp app/build/outputs/apk/release/app-release-signed.apk ../apk-out/Authenticator-Pro-v3.0.0.apk
+          elif [ -f app/build/outputs/apk/release/app-release.apk ]; then
+            cp app/build/outputs/apk/release/app-release.apk ../apk-out/Authenticator-Pro-v3.0.0.apk
+          else
+            APK_FILE=$(find . -name "*signed*.apk" | head -n 1)
+            [ -z "$APK_FILE" ] && APK_FILE=$(find . -name "*.apk" | head -n 1)
+            cp "$APK_FILE" ../apk-out/Authenticator-Pro-v3.0.0.apk
+          fi
+          ls -la ../apk-out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Authenticator-Pro-v3.0.0-APK
+          path: apk-out/*.apk
