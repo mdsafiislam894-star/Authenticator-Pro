@@ -889,3 +889,80 @@ details.glass-details summary { cursor: pointer; font-size: 13px; font-weight: 6
   background: var(--accent); color: #fff; display: grid; place-items: center;
   font-size: 12px; font-weight: 800; z-index: 10; box-shadow: 0 2px 6px rgba(0,0,0,.3);
 }
+
+/* ---------- Smart Recovery Codes Vault ---------- */
+.recovery-dialog-header { margin-bottom: 14px; }
+.rd-brand-row { display: flex; align-items: center; gap: 12px; }
+.rd-title-box { min-width: 0; flex: 1; }
+.rd-subtitle { font-size: 12px; color: var(--muted); display: block; margin-top: 2px; }
+.recovery-status-card {
+  padding: 12px 14px; border-radius: 16px; background: var(--card2);
+  border: 1px solid var(--edge); margin-bottom: 12px;
+}
+.rs-info { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.rs-bar-bg { width: 100%; height: 6px; background: rgba(0,0,0,0.15); border-radius: 999px; overflow: hidden; }
+:root[data-theme="dark"] .rs-bar-bg { background: rgba(255,255,255,0.1); }
+.rs-bar-fill { height: 100%; border-radius: 999px; transition: width 0.3s ease; }
+.rs-alert {
+  margin-top: 8px; padding: 8px 10px; border-radius: 10px;
+  background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3);
+  color: var(--danger); font-size: 11.5px; line-height: 1.4;
+}
+.recovery-actions-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.mini-action-btn { padding: 7px 12px !important; font-size: 12px !important; border-radius: 12px !important; white-space: nowrap; }
+.recovery-codes-scroll { max-height: 320px; overflow-y: auto; padding-right: 4px; }
+.recovery-codes-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+@media (max-width: 460px) { .recovery-codes-grid { grid-template-columns: 1fr; } }
+.recovery-code-card {
+  background: var(--card); border: 1px solid var(--edge); border-radius: 14px;
+  padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; transition: all 0.2s;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+.recovery-code-card.is-used { opacity: 0.55; background: var(--card2); border-style: dashed; }
+.recovery-code-card.is-used .rcc-code { text-decoration: line-through; color: var(--muted); }
+.rcc-top { display: flex; justify-content: space-between; align-items: center; }
+.rcc-num { font-size: 11px; font-weight: 700; color: var(--muted); }
+.rcc-used-toggle { display: flex; align-items: center; gap: 4px; font-size: 11px; cursor: pointer; user-select: none; }
+.rcc-used-toggle input { cursor: pointer; width: 14px; height: 14px; accent-color: var(--accent); }
+.rcc-code-box { background: rgba(0,0,0,0.12); padding: 6px 8px; border-radius: 8px; text-align: center; }
+:root[data-theme="light"] .rcc-code-box { background: rgba(0,0,0,0.04); }
+.rcc-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13.5px; font-weight: 700; letter-spacing: 0.5px; color: var(--text); word-break: break-all;
+}
+.rcc-code.masked { letter-spacing: 2px; opacity: 0.7; }
+.rcc-footer { display: flex; gap: 6px; }
+.rcc-btn {
+  flex: 1; background: var(--card2); border: 1px solid var(--edge); border-radius: 8px;
+  padding: 4px 6px; font-size: 11.5px; cursor: pointer; color: var(--text); display: grid; place-items: center; transition: background 0.15s;
+}
+.rcc-btn:hover { background: var(--hi); }
+.rcc-del { flex: 0 0 28px; opacity: 0.6; }
+.rcc-del:hover { opacity: 1; color: var(--danger); }
+.empty-recovery-state { text-align: center; padding: 24px 10px; }
+.detection-pill {
+  margin-top: 8px; padding: 8px 12px; border-radius: 12px;
+  background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35);
+  color: var(--ok, #10b981); font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px;
+}
+.tag.recovery-pill-tag {
+  background: rgba(56, 189, 248, 0.15); color: var(--accent);
+  border: 1px solid rgba(56, 189, 248, 0.3); cursor: pointer; font-weight: 700;
+}
+.tag.recovery-pill-tag:hover { filter: brightness(1.15); }
+.swipe-btn.rec-btn { background: rgba(56, 189, 248, 0.18); border-color: rgba(56, 189, 248, 0.35); }
+.vault-account-grid { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; }
+.vault-acc-card {
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+  background: var(--card2); border: 1px solid var(--edge); border-radius: 14px;
+  cursor: pointer; transition: transform 0.15s, border-color 0.15s;
+}
+.vault-acc-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+.vac-info { flex: 1; min-width: 0; }
+.vac-title { display: block; font-size: 14px; }
+.vac-name { display: block; font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vac-bar-wrap { width: 100%; height: 4px; background: rgba(0,0,0,0.1); border-radius: 4px; overflow: hidden; margin-top: 5px; }
+.vac-bar { height: 100%; }
+.vac-badge { text-align: right; font-size: 13px; white-space: nowrap; }
+.vac-badge small { display: block; font-size: 10px; opacity: 0.7; }
+.brand .logo-sm { filter: drop-shadow(0 2px 8px rgba(56, 189, 248, 0.45)); }

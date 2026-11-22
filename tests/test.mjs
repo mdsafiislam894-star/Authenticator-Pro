@@ -138,6 +138,7 @@ await t('store: dedupe, trash, restore, permanent delete, reorder', () => {
 
 import { generatePassword, generatePassphrase, evaluateStrength } from '../js/password.js';
 import { runSecurityAudit } from '../js/security-audit.js';
+import { parseRecoveryText } from '../js/recovery-codes.js';
 
 await t('password generator creates robust passwords & passphrases', () => {
   const pwd = generatePassword({ length: 20 });
@@ -162,6 +163,56 @@ await t('security audit detects missing lock, backup, and duplicate secrets', ()
   assert.ok(audit.score < 80);
   assert.ok(audit.issues.some((iss) => iss.title.includes('ডুপ্লিকেট')));
   assert.ok(audit.issues.some((iss) => iss.title.includes('লক')));
+});
+
+await t('smart recovery codes parser extracts codes from GitHub and Google text', () => {
+  const githubSnippet = `
+    Download your recovery codes
+    You can use recovery codes as a second factor to authenticate...
+    • 0ed6f-6d077    • c8edc-934ad
+    • 68b0b-4490b    • 62be6-05f8e
+    • 12962-7b376    • 90122-d83b8
+    • 1dea5-9eda1    • 935ce-6ae25
+    • 6fd19-856d7    • d1638-1d0e1
+    • 11f7f-81a0b    • 8717d-72fd2
+    • 650d2-cea94    • c5877-1932e
+    • 12c5a-0e96a    • bb72b-87098
+  `;
+  const codes = parseRecoveryText(githubSnippet);
+  assert.equal(codes.length, 16);
+  assert.ok(codes.includes('0ed6f-6d077'));
+  assert.ok(codes.includes('bb72b-87098'));
+
+  const googleSnippet = `
+    Google Backup Codes:
+    1234 5678
+    8765 4321
+  `;
+  const gCodes = parseRecoveryText(googleSnippet);
+  assert.equal(gCodes.length, 2);
+  assert.ok(gCodes.includes('1234 5678'));
+  assert.ok(gCodes.includes('8765 4321'));
+});
+
+await t('recovery codes survive AES-GCM encrypted backup roundtrip and store merge', async () => {
+  const acc = newAccount({
+    issuer: 'GitHub',
+    name: 'mdsafiislam894-star',
+    secret: 'JL44E5ALF4MJEJQ0',
+    recoveryCodes: [
+      { id: 'c1', code: '0ed6f-6d077', used: true, usedAt: 1700000000000 },
+      { id: 'c2', code: 'c8edc-934ad', used: false, usedAt: null },
+    ],
+  });
+  const vault = { ...emptyVault(), accounts: [acc] };
+  const passphrase = 'MySecretPassphrase123!';
+  const enc = await encryptJson(vault, passphrase);
+  const dec = await decryptJson(enc, passphrase);
+
+  assert.equal(dec.accounts.length, 1);
+  assert.equal(dec.accounts[0].recoveryCodes.length, 2);
+  assert.equal(dec.accounts[0].recoveryCodes[0].used, true);
+  assert.equal(dec.accounts[0].recoveryCodes[1].code, 'c8edc-934ad');
 });
 
 console.log(`\n${passed} tests passed`);

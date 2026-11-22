@@ -13,6 +13,7 @@ export function openMenu(ctx) {
   const trashCount = (ctx.vault.trash || []).length;
   const pinnedCount = ctx.vault.accounts.filter((a) => a.pinned).length;
   const tgReady = isTelegramConfigured();
+  const recoveryCount = ctx.vault.accounts.reduce((acc, a) => acc + (a.recoveryCodes ? a.recoveryCodes.length : 0), 0);
   const m = openModal(`
     <h3>মেনু <span class="badge-count">v${esc(ctx.appVersion)}</span></h3>
     <div class="stat-grid">
@@ -21,6 +22,7 @@ export function openMenu(ctx) {
       <div class="stat-card"><b>${user ? 'চালু' : 'বন্ধ'}</b><span>অটো-সিঙ্ক</span></div>
     </div>
     ${ctx.canInstall ? '<button class="menu-item" data-a="install"><span class="ico">📲</span><span>ফোনে অ্যাপ ইনস্টল করুন<small>আসল অ্যাপের মতো হোম স্ক্রিনে যুক্ত হবে</small></span></button>' : ''}
+    <button class="menu-item" data-a="recoveryVault"><span class="ico">🔐</span><span>স্মার্ট রিকভারি কোড ভল্ট<small>GitHub, Google, Binance ইত্যাদির ব্যাকআপ কোড স্টোরেজ</small></span>${recoveryCount ? `<span class="badge-count">${recoveryCount}টি কোড</span>` : ''}</button>
     <button class="menu-item" data-a="themePicker"><span class="ico">🎨</span><span>প্রিমিয়াম থিম ও লিকুইড স্টাইল<small>৬টি স্বতন্ত্র ডার্ক ও লাইট কাঁচের ভাইব</small></span></button>
     <button class="menu-item" data-a="audit"><span class="ico">🛡️</span><span>সিকিউরিটি অডিট ও হেলথ স্কোর<small>ভল্ট নিরাপত্তা স্কোর ও রিকমেন্ডেশন</small></span></button>
     <button class="menu-item" data-a="pwdGen"><span class="ico">🔑</span><span>শক্তিশালী পাসওয়ার্ড জেনারেটর<small>এলোমেলো পাসওয়ার্ড বা পাসফ্রেজ তৈরি</small></span></button>
@@ -52,6 +54,7 @@ export function openMenu(ctx) {
     m.close();
     ({
       install: () => ctx.promptInstall(),
+      recoveryVault: () => ctx.openRecoveryVault(),
       themePicker: () => ctx.openThemePicker(),
       audit: () => ctx.openSecurityAudit(),
       pwdGen: () => ctx.openPasswordGenerator(),

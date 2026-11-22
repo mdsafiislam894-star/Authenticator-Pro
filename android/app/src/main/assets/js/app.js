@@ -17,6 +17,7 @@ import { initPhysics } from './physics.js';
 import { syncNetworkTime, getCorrectedNow } from './timesync.js';
 import { recordCopyEvent } from './analytics.js';
 import { renderAccountAvatar } from './brand-icons.js';
+import { openRecoveryCodesDialog, openGlobalRecoveryVault } from './recovery-codes.js';
 
 // ---------- state ----------
 let vault = loadVault();
@@ -279,6 +280,8 @@ const ctx = {
   openAccountQr: (id) => openAccountQr(ctx, id),
   printEmergencySheet: () => printEmergencySheet(ctx),
   openSecurity: () => openSecurity(ctx),
+  openRecoveryCodes: (id) => openRecoveryCodesDialog(ctx, id),
+  openRecoveryVault: () => openGlobalRecoveryVault(ctx),
   openSync: () => openSync(ctx),
   openTrash: () => openTrash(ctx),
 };
@@ -346,6 +349,7 @@ function cardHtml(a, idx, total) {
       <span>📋 কোড কপি করুন</span>
     </div>
     <div class="swipe-action swipe-left-action">
+      <button class="swipe-btn rec-btn" data-swipe-rec="${a.id}" title="রিকভারি কোড">🔐</button>
       <button class="swipe-btn focus-btn" data-swipe-focus="${a.id}" title="বড় পর্দায় ফোকাস ভিউ">🔍</button>
       <button class="swipe-btn edit-btn" data-swipe-edit="${a.id}" title="এডিট">✏️</button>
       <button class="swipe-btn pin-btn" data-swipe-pin="${a.id}" title="${a.pinned ? 'আনপিন' : 'পিন'}">${a.pinned ? '⭐' : '☆'}</button>
@@ -364,6 +368,10 @@ function cardHtml(a, idx, total) {
           <div class="meta">
             ${a.group ? `<span class="tag">${esc(a.group)}</span>` : ''}
             ${a.type !== 'totp' ? `<span class="tag">${a.type.toUpperCase()}</span>` : ''}
+            ${a.recoveryCodes && a.recoveryCodes.length ? `
+              <span class="tag recovery-pill-tag" data-recovery="${a.id}" title="রিকভারি কোড দেখুন">
+                🔐 ${a.recoveryCodes.filter((c) => !c.used).length}/${a.recoveryCodes.length} কোড
+              </span>` : ''}
             <span class="tag copied-tag hidden" data-copied="${a.id}">কপিড ✓</span>
           </div>
         </div>
@@ -493,6 +501,9 @@ function render() {
 
     attachSwipeListeners(card, a);
 
+    const recSwipeBtn = wrap.querySelector('[data-swipe-rec]');
+    if (recSwipeBtn) recSwipeBtn.onclick = (e) => { e.stopPropagation(); resetOpenSwipe(); openRecoveryCodesDialog(ctx, id); };
+
     const focusBtn = wrap.querySelector('[data-swipe-focus]');
     if (focusBtn) focusBtn.onclick = (e) => { e.stopPropagation(); resetOpenSwipe(); openFocusView(ctx, id); };
 
@@ -547,6 +558,7 @@ function render() {
         return;
       }
       if (reorderMode) return;
+      if (e.target.closest('[data-recovery]')) return openRecoveryCodesDialog(ctx, id);
       if (e.target.closest('[data-ring]')) return openFocusView(ctx, id);
       if (e.target.closest('[data-edit]')) return openEdit(ctx, id);
       if (e.target.closest('[data-next]')) {

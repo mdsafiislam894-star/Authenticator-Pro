@@ -111,39 +111,78 @@ export function renderAccountAvatar(account) {
   `;
 }
 
-// Master Luxury App Vector Logo (Cyber-Shield with Quantum Core)
+// Master Luxury App Vector Logo (Imperial Cyber-Shield with Golden Shackle & Quantum Core)
 export const MASTER_LOGO_SVG = `
 <svg viewBox="0 0 100 100" class="master-app-logo" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="shieldArmor" x1="15%" y1="0%" x2="85%" y2="100%">
       <stop offset="0%" stop-color="#38bdf8"/>
-      <stop offset="50%" stop-color="#2563eb"/>
-      <stop offset="100%" stop-color="#1e1b4b"/>
+      <stop offset="25%" stop-color="#2563eb"/>
+      <stop offset="70%" stop-color="#1d2456"/>
+      <stop offset="100%" stop-color="#090d1f"/>
     </linearGradient>
-    <linearGradient id="lockCoreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="facetHighlight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.8"/>
+      <stop offset="50%" stop-color="#a5f3fc" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#38bdf8" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="goldShackle" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="45%" stop-color="#fbbf24"/>
+      <stop offset="80%" stop-color="#d97706"/>
+      <stop offset="100%" stop-color="#92400e"/>
+    </linearGradient>
+    <linearGradient id="quantumGlow" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="60%" stop-color="#a5f3fc"/>
+      <stop offset="50%" stop-color="#a5f3fc"/>
       <stop offset="100%" stop-color="#38bdf8"/>
     </linearGradient>
     <filter id="logoGlow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="3.5" result="blur"/>
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
       <feComposite in="SourceGraphic" in2="blur" operator="over"/>
     </filter>
   </defs>
-  
-  <!-- Outer faceted cyber shield -->
-  <path d="M50 8 L84 22 C84 62 50 88 50 92 C50 88 16 62 16 22 Z" 
-        fill="url(#shieldGrad)" stroke="rgba(255,255,255,0.6)" stroke-width="2.5" filter="url(#logoGlow)"/>
-  
-  <!-- Inner optical glass refraction contour -->
-  <path d="M50 14 L78 26 C78 58 50 80 50 84 C50 80 22 58 22 26 Z" 
-        fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.5" stroke-dasharray="4 2"/>
-  
-  <!-- Quantum Keyhole & Biometric Lock -->
-  <circle cx="50" cy="45" r="14" fill="none" stroke="url(#lockCoreGrad)" stroke-width="3.5"/>
-  <path d="M50 31 C43 31 38 36 38 43 C38 47 40 51 43 53 L41 65 C41 66.5 42.5 68 44 68 L56 68 C57.5 68 59 66.5 59 65 L57 53 C60 51 62 47 62 43 C62 36 57 31 50 31 Z" 
-        fill="url(#lockCoreGrad)"/>
-  <circle cx="50" cy="43" r="3.5" fill="#0f172a"/>
-  <path d="M50 46.5 L50 56" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Outer Cyber Shield Body -->
+  <path d="M50 7 L85 20 C85 60 50 87 50 93 C50 87 15 60 15 20 Z"
+        fill="url(#shieldArmor)" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" filter="url(#logoGlow)"/>
+
+  <!-- Left Facet 3D Chamfer -->
+  <path d="M50 8 L17 21 C17 59 50 86 50 92 Z"
+        fill="url(#facetHighlight)" opacity="0.38"/>
+
+  <!-- Inner Optical Dash Frame -->
+  <path d="M50 14 L79 26 C79 56 50 78 50 83 C50 78 21 56 21 26 Z"
+        fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1" stroke-dasharray="3 1.5"/>
+
+  <!-- Radar Concentric Security Rings -->
+  <circle cx="50" cy="47" r="21" fill="none" stroke="rgba(56,189,248,0.3)" stroke-width="0.8"/>
+  <circle cx="50" cy="47" r="17" fill="rgba(6,16,38,0.75)" stroke="rgba(56,189,248,0.4)" stroke-width="1"/>
+
+  <!-- Golden Shackle -->
+  <path d="M42 45 L42 35 C42 30.5 45.5 27 50 27 C54.5 27 58 30.5 58 35 L58 45"
+        fill="none" stroke="url(#goldShackle)" stroke-width="3.6" stroke-linecap="round"/>
+
+  <!-- Quantum Core Padlock Body -->
+  <rect x="36" y="42" width="28" height="22" rx="5.5"
+        fill="url(#quantumGlow)" stroke="#ffffff" stroke-width="0.8"/>
+
+  <!-- Keyhole -->
+  <circle cx="50" cy="50" r="2.5" fill="#060c1d"/>
+  <path d="M48.8 51.5 L51.2 51.5 L52 57 C52 58 51 58.8 50 58.8 C49 58.8 48 58 48 57 Z" fill="#060c1d"/>
+  <circle cx="50" cy="50" r="1" fill="#38bdf8"/>
+
+  <!-- 2FA Energy Verification Bars -->
+  <g stroke="url(#quantumGlow)" stroke-width="1" stroke-linecap="round" opacity="0.85">
+    <line x1="28" y1="45" x2="32" y2="45"/>
+    <line x1="26" y1="48" x2="32" y2="48"/>
+    <line x1="28" y1="51" x2="32" y2="51"/>
+    <line x1="68" y1="45" x2="72" y2="45"/>
+    <line x1="68" y1="48" x2="74" y2="48"/>
+    <line x1="68" y1="51" x2="72" y2="51"/>
+  </g>
+
+  <!-- Bottom Apex Diamond Accent -->
+  <polygon points="50,75 51.5,77.5 50,80 48.5,77.5" fill="#38bdf8"/>
 </svg>
 `;

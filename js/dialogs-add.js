@@ -4,6 +4,7 @@ import { parseOtpauth, isValidSecret } from './otp.js';
 import { decodeMigration, isMigrationUri } from './migration.js';
 import { addAccounts, sameSecret } from './store.js';
 import { startCamera, scanImageFile } from './scanner.js';
+import { parseRecoveryText } from './recovery-codes.js';
 
 export function parseTextAccounts(text) {
   text = text.trim();
@@ -73,9 +74,10 @@ export function openAddMenu(ctx) {
     <button class="menu-item" data-a="gaexport"><span class="ico">📤</span><span>Google Authenticator থেকে ইমপোর্ট<small>ধাপে ধাপে সহজ গাইড + ব্যাচ প্রিভিউ</small></span></button>
     <button class="menu-item" data-a="paste"><span class="ico">📋</span><span>লিংক পেস্ট করুন<small>otpauth:// বা otpauth-migration://</small></span></button>
     <button class="menu-item" data-a="manual"><span class="ico">⌨️</span><span>Secret key নিজে লিখুন<small>TOTP / HOTP / Steam Guard</small></span></button>
+    <button class="menu-item" data-a="recovery"><span class="ico">🔐</span><span>স্মার্ট রিকভারি কোড ভল্ট<small>GitHub, Google ইত্যাদির ব্যাকআপ কোড যোগ বা দেখুন</small></span></button>
     <button class="menu-item" data-a="pwdgen"><span class="ico">🔑</span><span>পাসওয়ার্ড জেনারেটর<small>নতুন অ্যাকাউন্টের জন্য শক্তিশালী পাসওয়ার্ড তৈরি</small></span></button>
     <input type="file" id="file" accept="image/*" multiple class="hidden">`);
-  const go = (a) => { m.close(); ({ scan: () => openScan(ctx), paste: () => openPaste(ctx), manual: () => openManual(ctx), gaexport: () => openGAGuide(ctx), pwdgen: () => ctx.openPasswordGenerator() })[a]?.(); };
+  const go = (a) => { m.close(); ({ scan: () => openScan(ctx), paste: () => openPaste(ctx), manual: () => openManual(ctx), recovery: () => ctx.openRecoveryVault(), gaexport: () => openGAGuide(ctx), pwdgen: () => ctx.openPasswordGenerator() })[a]?.(); };
   m.el.querySelectorAll('[data-a]').forEach((b) => (b.onclick = () => {
     if (b.dataset.a === 'image') return m.el.querySelector('#file').click();
     go(b.dataset.a);
@@ -157,6 +159,13 @@ export function openManual(ctx) {
       <div class="field"><label>অ্যালগরিদম</label><select id="algorithm"><option>SHA1</option><option>SHA256</option><option>SHA512</option></select></div>
       <div class="field"><label>পিরিয়ড</label><input id="period" type="number" value="30" min="5" max="120"></div>
     </div>
+    <details class="glass-details" style="margin-top:8px;margin-bottom:12px">
+      <summary>🔐 রিকভারি কোড যোগ করুন (ঐচ্ছিক)</summary>
+      <div class="field" style="margin-top:8px;margin-bottom:0">
+        <textarea id="recCodesInput" rows="3" placeholder="GitHub বা Google এর ব্যাকআপ কোডগুলো এখানে পেস্ট করুন..." style="font-family:monospace;font-size:12px"></textarea>
+        <p class="hint" style="font-size:11px;margin-top:4px">স্মার্ট সিস্টেম স্বয়ংক্রিয়ভাবে আলাদা কোড হিসেবে সেভ করবে।</p>
+      </div>
+    </details>
     <button class="btn primary block" id="ok">সেভ করুন</button>`);
   
   m.el.querySelectorAll('[data-iss]').forEach((btn) => {
@@ -176,9 +185,21 @@ export function openManual(ctx) {
     const type = g('type');
     const group = g('group');
     if (group && !ctx.vault.groups.includes(group)) ctx.vault.groups.push(group);
+    
+    // Parse any optional recovery codes
+    const recText = m.el.querySelector('#recCodesInput')?.value || '';
+    const recoveryCodes = parseRecoveryText(recText).map((c) => ({
+      id: Math.random().toString(36).slice(2, 10),
+      code: c,
+      used: false,
+      usedAt: null,
+      addedAt: Date.now(),
+    }));
+
     addAccounts(ctx.vault, [{
       issuer: g('issuer'), name: g('name'), secret, type, group,
       digits: type === 'steam' ? 5 : +g('digits'), algorithm: g('algorithm'), period: +g('period') || 30,
+      recoveryCodes,
     }]);
     ctx.commit(); m.close(); toast('অ্যাকাউন্ট যুক্ত হয়েছে ✅');
   };
