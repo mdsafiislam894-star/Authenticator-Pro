@@ -200,6 +200,7 @@ export function openSync(ctx) {
   const user = drive.getUser();
   const meta = sync.getSyncMeta();
   const configured = drive.isConfigured();
+  const isExt = drive.isExtension();
   const m = openModal(user ? `
     <h3>☁️ Google ব্যাকআপ</h3>
     <div class="profile-card">
@@ -219,13 +220,27 @@ export function openSync(ctx) {
     <p class="hint"><b>Continue with Google</b> চেপে আপনার Gmail সিলেক্ট করলেই Google Drive-এর <b>লুকানো appDataFolder</b>-এ সব কোড AES-256-GCM এনক্রিপ্ট হয়ে অটো-ব্যাকআপ হবে। অন্য ফোনে লগইন করলেই সব ফিরে আসবে।</p>
     <button class="btn google-btn block" id="in">${GOOGLE_G_SVG}<span>Continue with Google</span></button>
     
+    ${isExt ? `
+    <button class="btn block" id="webBridgeBtn" style="margin-top:10px;background:linear-gradient(135deg,rgba(56,189,248,0.18),rgba(37,99,235,0.22));border:1px solid rgba(56,189,248,0.4);font-weight:600">🌐 ওয়েব ব্রিজ দিয়ে ১-ক্লিকে সিঙ্ক (জিরো কনফিগ)</button>
+    <p class="hint" style="margin:4px 0 10px;font-size:11.5px">গুগল কনসোল এডিট না করেও সরাসরি আপনার অফিসিয়াল ওয়েব অ্যাপের মাধ্যমে ১ ক্লিকে এক্সটেনশনে লগইন হয়ে যাবে।</p>
+    
+    <div style="margin-top:8px;padding:12px;border-radius:16px;background:var(--card2);border:1px solid var(--line);font-size:12px;line-height:1.5">
+      <b style="color:var(--text)">💡 সরাসরি এক্সটেনশনে সাইন-ইন করতে চাইলে:</b><br>
+      Google Cloud Console-এর Web Client ID-তে <b>Authorized redirect URIs</b>-এ এটি যুক্ত করুন:<br>
+      <div style="display:flex;align-items:center;gap:6px;margin:6px 0">
+        <code style="word-break:break-all;color:var(--accent);font-size:11px;flex:1;background:rgba(0,0,0,0.25);padding:4px 8px;border-radius:6px;user-select:all">${esc(drive.EXTENSION_REDIRECT_URI)}</code>
+        <button class="btn sm" id="copyExtRedirectBtn" style="white-space:nowrap">📋 কপি</button>
+      </div>
+    </div>
+    ` : `
     <div style="margin-top:12px;padding:12px;border-radius:18px;background:var(--card2);border:1px solid var(--line);font-size:12.5px;line-height:1.5">
-      <b style="color:var(--text)">⚠️ যদি Error 401: invalid_client দেখায়:</b><br>
-      ১. Google Cloud Console-এ Client ID তৈরি করার সময় Application Type অবশ্যই <b>Web application</b> বেছে নিতে হবে (Android নয়)।<br>
+      <b style="color:var(--text)">⚠️ যদি Error 401: invalid_client দেখায়:</b><br>
+      ১. Google Cloud Console-এ Client ID তৈরি করার সময় Application Type অবশ্যই <b>Web application</b> বেছে নিতে হবে (Android নয়)।<br>
       ২. <b>Authorized JavaScript origins</b>-এ হুবহু এটি যুক্ত করুন:<br>
       <code style="word-break:break-all;color:var(--accent)">https://mdsafiislam894-star.github.io</code><br>
-      ৩. আপনার Web Client ID টি নিচের বক্সে বসিয়ে <b>'Client ID সেভ'</b> চাপুন।
+      ৩. আপনার Web Client ID টি নিচের বক্সে বসিয়ে <b>'Client ID সেভ'</b> চাপুন।
     </div>
+    `}
 
     <details class="glass-details" style="margin-top:10px" ${configured ? '' : 'open'}>
       <summary>⚙️ Google Client ID পরিবর্তন / সেভ</summary>
@@ -238,6 +253,19 @@ export function openSync(ctx) {
     </div>`);
 
   const q = (s) => m.el.querySelector(s);
+  if (q('#copyExtRedirectBtn')) {
+    q('#copyExtRedirectBtn').onclick = () => {
+      copyText(drive.EXTENSION_REDIRECT_URI);
+      toast('রিডাইরেক্ট URI কপি হয়েছে! ✅');
+    };
+  }
+  if (q('#webBridgeBtn')) {
+    q('#webBridgeBtn').onclick = () => {
+      m.close();
+      drive.openWebAuthBridge();
+      toast('ওয়েব অথ ব্রিজ খোলা হয়েছে! ব্রাউজার ট্যাবে সাইন-ইন করুন 🌐');
+    };
+  }
   if (q('#openTgFromSync')) q('#openTgFromSync').onclick = () => { m.close(); openTelegramDialog(ctx); };
   if (q('#saveCid')) q('#saveCid').onclick = () => {
     const val = q('#cid').value.trim();

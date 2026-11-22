@@ -1,4 +1,4 @@
-import { $, esc, toast, avatarColor, formatCode, copyText, confirmDialog } from './ui.js';
+import { $, esc, toast, avatarColor, formatCode, copyText, confirmDialog, openModal, GOOGLE_G_SVG } from './ui.js';
 import { generateCode, secondsLeft } from './otp.js';
 import { loadVault, saveVault, updateAccount, deleteAccount, moveAccountOrder } from './store.js';
 import { APP_VERSION } from './config.js';
@@ -828,10 +828,133 @@ setInterval(tick, 1000);
 setInterval(() => doSync(false), 5 * 60 * 1000);
 doSync(false);
 
-// Handle home-screen app shortcuts (?action=scan / ?action=sync)
-const action = new URLSearchParams(location.search).get('action');
+// Handle home-screen app shortcuts (?action=scan / ?action=sync / ?auth_bridge=1)
+const urlParams = new URLSearchParams(location.search);
+const action = urlParams.get('action');
 if (action === 'scan') setTimeout(() => openScan(ctx), 300);
 else if (action === 'sync') setTimeout(() => openSync(ctx), 300);
+
+if (urlParams.get('auth_bridge') === '1') {
+  const targetExtId = urlParams.get('ext_id') || 'kkbnfefhgpmcbkelfbchfffdagmifddl';
+  setTimeout(() => handleWebAuthBridge(targetExtId), 400);
+}
+
+// Handle OAuth2 Implicit Flow hash redirect (#access_token=...)
+if (location.hash && location.hash.includes('access_token=')) {
+  handleOAuthHash();
+}
+
+async function handleWebAuthBridge(extId) {
+  const m = openModal(`
+    <div style="text-align:center;padding:10px 4px">
+      <div style="font-size:38px;margin-bottom:8px">🛡️ ⇄ 🌐</div>
+      <h3 style="margin:0 0 6px;font-size:18px">এক্সটেনশন ক্লাউড সিঙ্ক ব্রিজ</h3>
+      <p class="hint" style="margin-bottom:16px;line-height:1.5">
+        <b>Continue with Google</b> চেপে আপনার গুগল অ্যাকাউন্টে সাইন-ইন করলেই
+        ব্রাউজার এক্সটেনশনে স্বয়ংক্রিয়ভাবে ক্লাউড ব্যাকআপ সিঙ্ক সক্রিয় হয়ে যাবে।
+      </p>
+      <button class="btn google-btn block" id="bridgeGoogleBtn">
+        ${GOOGLE_G_SVG}<span>Continue with Google</span>
+      </button>
+      <div id="bridgeStatus" style="margin-top:14px;font-size:12.5px;color:var(--muted)"></div>
+    </div>
+  `);
+
+  const btn = m.el.querySelector('#bridgeGoogleBtn');
+  const statusEl = m.el.querySelector('#bridgeStatus');
+
+  btn.onclick = async () => {
+    btn.disabled = true;
+    statusEl.innerHTML = 'গুগল সাইন-ইন লোড হচ্ছে...';
+    try {
+      const user = await drive.signIn(true);
+      const session = drive.getSession();
+      statusEl.innerHTML = `<span style="color:var(--ok)">✅ সাইন-ইন সফল: ${esc(user.email)}</span><br>এক্সটেনশনে তথ্য পাঠানো হচ্ছে...`;
+
+      let delivered = false;
+      if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+        try {
+          chrome.runtime.sendMessage(extId, { type: 'AUTH_BRIDGE_SUCCESS', session }, (resp) => {
+            if (resp?.success || !chrome.runtime?.lastError) {
+              delivered = true;
+              statusEl.innerHTML = `<span style="color:var(--ok)">🎉 এক্সটেনশনে সিঙ্ক সফলভাবে চালু হয়েছে!</span><br><small>এই ট্যাবটি ৩ সেকেন্ডে বন্ধ হয়ে যাবে...</small>`;
+              setTimeout(() => {
+                m.close();
+                try { window.close(); } catch {}
+              }, 2500);
+            }
+          });
+        } catch (e) {
+          console.warn('Direct sendMessage note:', e);
+        }
+      }
+
+      setTimeout(() => {
+        if (!delivered) {
+          statusEl.innerHTML = `
+            <div style="margin-top:10px;padding:12px;background:var(--card2);border-radius:14px;font-size:12px;text-align:left;border:1px solid var(--line)">
+              <b style="color:var(--ok)">✅ গুগল সাইন-ইন সফল হয়েছে!</b><br>
+              এক্সটেনশনে টোকেন যুক্ত করতে নিচের বাটনে চাপ দিন:<br>
+              <button class="btn sm primary block" id="copyTokenBtn" style="margin-top:8px">📋 ১-ক্লিকে টোকেন কপি করুন</button>
+            </div>
+          `;
+          const copyBtn = statusEl.querySelector('#copyTokenBtn');
+          if (copyBtn) {
+            copyBtn.onclick = () => {
+              copyText(session.token);
+              toast('টোকেন কপি হয়েছে! এক্সটেনশনে পেস্ট করুন ✅');
+            };
+          }
+        }
+      }, 1500);
+    } catch (err) {
+      btn.disabled = false;
+      statusEl.innerHTML = `<span style="color:var(--danger)">সাইন-ইন সমস্যা: ${esc(err.message)}</span>`;
+      toast(err.message);
+    }
+  };
+}
+
+async function handleOAuthHash() {
+  try {
+    const hash = location.hash.replace(/^#/, '');
+    const params = new URLSearchParams(hash);
+    const token = params.get('access_token');
+    const expiresIn = Number(params.get('expires_in')) || 3600;
+
+    if (!token) return;
+
+    // Clear hash from address bar immediately
+    history.replaceState(null, '', location.pathname + location.search);
+
+    // If opened as popup window by opener:
+    if (window.opener && window.opener !== window) {
+      try {
+        window.opener.postMessage({ authpro_token: true, token, expiresIn }, location.origin);
+        window.close();
+        return;
+      } catch {}
+    }
+
+    const info = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${token}` },
+    }).then((r) => r.json());
+
+    drive.saveSession({
+      token,
+      expiresAt: Date.now() + expiresIn * 1000,
+      email: info.email,
+      name: info.name,
+      picture: info.picture,
+    });
+
+    toast(`Google ব্যাকআপ সংযুক্ত: ${info.email} ✅`);
+    refreshSyncDot();
+    doSync(true);
+  } catch (e) {
+    console.error('OAuth hash error:', e);
+  }
+}
 
 // Service Worker registration + automatic one-tap update notifications
 if (location.protocol !== 'chrome-extension:' && 'serviceWorker' in navigator) {

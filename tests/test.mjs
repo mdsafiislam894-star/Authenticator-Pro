@@ -194,6 +194,9 @@ await t('smart recovery codes parser extracts codes from GitHub and Google text'
   assert.ok(gCodes.includes('8765 4321'));
 });
 
+import { readFileSync } from 'node:fs';
+import * as drive from '../js/drive.js';
+
 await t('recovery codes survive AES-GCM encrypted backup roundtrip and store merge', async () => {
   const acc = newAccount({
     issuer: 'GitHub',
@@ -213,6 +216,23 @@ await t('recovery codes survive AES-GCM encrypted backup roundtrip and store mer
   assert.equal(dec.accounts[0].recoveryCodes.length, 2);
   assert.equal(dec.accounts[0].recoveryCodes[0].used, true);
   assert.equal(dec.accounts[0].recoveryCodes[1].code, 'c8edc-934ad');
+});
+
+await t('drive module exports valid client ID, permanent extension ID and redirect URI', () => {
+  assert.ok(drive.isConfigured());
+  assert.ok(drive.getClientId().includes('.apps.googleusercontent.com'));
+  assert.equal(drive.EXTENSION_ID, 'kkbnfefhgpmcbkelfbchfffdagmifddl');
+  assert.equal(drive.EXTENSION_REDIRECT_URI, 'https://kkbnfefhgpmcbkelfbchfffdagmifddl.chromiumapp.org/');
+});
+
+await t('extension manifest.json is valid Manifest V3 with identity and external connect', () => {
+  const raw = readFileSync(new URL('../manifest.json', import.meta.url), 'utf8');
+  const manifest = JSON.parse(raw);
+  assert.equal(manifest.manifest_version, 3);
+  assert.ok(manifest.key, 'Fixed public key is set');
+  assert.ok(manifest.permissions.includes('identity'), 'identity permission present');
+  assert.ok(manifest.permissions.includes('tabs'), 'tabs permission present');
+  assert.ok(manifest.externally_connectable.matches.length > 0, 'externally_connectable defined');
 });
 
 console.log(`\n${passed} tests passed`);

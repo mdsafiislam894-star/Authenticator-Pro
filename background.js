@@ -1,5 +1,6 @@
 // Authenticator Pro - Background Service Worker (Manifest V3)
-// Handles context menus, active tab detection, 2FA autofill, and standalone window launch.
+// Handles context menus, active tab detection, 2FA autofill, standalone window launch,
+// and external Web Auth Bridge messages for zero-config Google Sync.
 
 chrome.runtime.onInstalled.addListener(() => {
   // Create right-click context menu options
@@ -62,5 +63,20 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     } catch (e) {
       console.warn('Script execution error:', e);
     }
+  }
+});
+
+// Handle External Messages from authorized Web App (Web Auth Bridge)
+chrome.runtime.onMessageExternal.addListener((message, sender, sendResponse) => {
+  if (message?.type === 'AUTH_BRIDGE_SUCCESS' && message?.session) {
+    chrome.storage.local.set({ 'authpro.google.v1': message.session }, () => {
+      sendResponse({ success: true, message: 'Extension session saved successfully' });
+    });
+    return true; // Keep message channel open for async response
+  }
+
+  if (message?.type === 'PING') {
+    sendResponse({ ok: true, version: '3.0.0' });
+    return false;
   }
 });

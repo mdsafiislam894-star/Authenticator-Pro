@@ -4,6 +4,7 @@
   "short_name": "Authenticator Pro",
   "version": "3.0.0",
   "description": "Ultra-luxury Liquid Glass 2FA Authenticator & Smart Recovery Codes Vault with instant autofill and cloud backup.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtU9CmmT8bZPjq7J3fxoECmGzgab4dd6m1glaECkh7dNzQxP3pJHrfS2b53D9eNWxMmU0+cRV0InIZ/PiWgkNJ6DUSemwISMMDdSTeQ71SaIWGDzHDyB5iIImmRRJT9axwtFGcc5DU/Cvusj9UNjYLe+/5ZTsoBSHt674QaHf7KKo7FucKFeKUX3+AfPVTGWAjo57MZxoy/+UKrCMgLmNDX7NXL94xKdqVEQ/mzLuxUufxVbFdfvlpFrEHRzljQwcIYYEujc95YsEoFUWH03MDH21qdWmVBRE0tPjHpefhb1LDOWN1Z9JMSVaZSsl6tzSs9QeGVuRXlXrRVLF9jMoAwIDAQAB",
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -33,8 +34,17 @@
     "scripting",
     "contextMenus",
     "clipboardWrite",
-    "sidePanel"
+    "sidePanel",
+    "identity",
+    "tabs"
   ],
+  "externally_connectable": {
+    "matches": [
+      "https://mdsafiislam894-star.github.io/*",
+      "http://localhost/*",
+      "http://127.0.0.1/*"
+    ]
+  },
   "host_permissions": [
     "https://*/*"
   ],

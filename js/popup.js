@@ -2,7 +2,7 @@
 // Extends the core Liquid Glass UI with desktop browser features:
 // - Detached floating pop-out window
 // - Active tab domain detection & 1-tap 2FA autofill
-// - Chrome storage synchronization
+// - Chrome storage synchronization & Web Auth Bridge listener
 
 import './app.js';
 import { generateCode } from './otp.js';
@@ -35,6 +35,27 @@ document.addEventListener('DOMContentLoaded', () => {
         window.open('popup.html?mode=window', 'authpro_window', 'width=410,height=650');
       }
     };
+  }
+
+  // Storage listener for cross-context Google sign-in (Web Auth Bridge -> Extension)
+  if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === 'local' && changes['authpro.google.v1']) {
+        const newSession = changes['authpro.google.v1'].newValue;
+        if (newSession) {
+          try {
+            localStorage.setItem('authpro.google.v1', JSON.stringify(newSession));
+          } catch {}
+          toast(`Google সিঙ্ক সক্রিয় হয়েছে: ${newSession.email || 'সংযুক্ত'} ✅`);
+          if (typeof window.authProCtx?.refreshSyncDot === 'function') {
+            window.authProCtx.refreshSyncDot();
+          }
+          if (typeof window.authProCtx?.doSync === 'function') {
+            window.authProCtx.doSync(false);
+          }
+        }
+      }
+    });
   }
 
   // Detect active tab and offer 1-tap 2FA autofill
@@ -97,7 +118,6 @@ document.addEventListener('DOMContentLoaded', () => {
             fillBtn.onclick = async () => {
               const code = await generateCode(matched, Date.now());
               await copyText(code);
-
               if (chrome.scripting && tab.id) {
                 chrome.scripting.executeScript({
                   target: { tabId: tab.id },
