@@ -235,4 +235,22 @@ await t('extension manifest.json is valid Manifest V3 with identity and external
   assert.ok(manifest.externally_connectable.matches.length > 0, 'externally_connectable defined');
 });
 
+import { THEMES } from '../js/dialogs-advanced.js';
+
+await t('all 8 brand-new luxury themes (Forest, Sea, Sakura, Vampire, Halloween, etc.) are registered', () => {
+  assert.equal(THEMES.length, 8);
+  const ids = THEMES.map(t => t.id);
+  assert.ok(ids.includes('green-forest'), 'Green Forest exists');
+  assert.ok(ids.includes('blue-sea'), 'Blue Sea exists');
+  assert.ok(ids.includes('sakura-blossom'), 'Sakura exists');
+  assert.ok(ids.includes('vampire-blood'), 'Vampire Blood Red exists');
+  assert.ok(ids.includes('halloween-orange'), 'Halloween Orange exists');
+  assert.ok(ids.includes('cyber-matrix'), 'Cyber Matrix exists');
+  assert.ok(ids.includes('celestial-nebula'), 'Celestial Nebula exists');
+  assert.ok(ids.includes('crystal-pearl'), 'Crystal Pearl exists');
+  for (const th of THEMES) {
+    assert.ok(th.name && th.tagline && th.accent && th.previewGrad, `Theme ${th.id} has complete metadata`);
+  }
+});
+
 console.log(`\n${passed} tests passed`);

@@ -169,64 +169,13 @@ export function openWebAuthBridge() {
 
 // Sign-in handler inside Chrome Extension (Manifest V3)
 async function signInInExtension(interactive = true) {
-  const cid = getClientId();
-
-  // Primary: chrome.identity.launchWebAuthFlow
-  if (typeof chrome !== 'undefined' && chrome.identity?.launchWebAuthFlow) {
-    const redirectUri = chrome.identity.getRedirectURL(); // e.g. https://<id>.chromiumapp.org/
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-      `client_id=${encodeURIComponent(cid)}` +
-      `&response_type=token` +
-      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-      `&scope=${encodeURIComponent(SCOPES)}` +
-      `&prompt=${interactive ? 'select_account' : 'none'}`;
-
-    try {
-      const responseUrl = await new Promise((resolve, reject) => {
-        chrome.identity.launchWebAuthFlow({ url: authUrl, interactive }, (res) => {
-          if (chrome.runtime?.lastError) {
-            return reject(new Error(chrome.runtime.lastError.message || 'Auth flow failed'));
-          }
-          if (!res) return reject(new Error('লগইন বাতিল করা হয়েছে'));
-          resolve(res);
-        });
-      });
-
-      const urlObj = new URL(responseUrl);
-      const hash = urlObj.hash.replace(/^#/, '');
-      const params = new URLSearchParams(hash || urlObj.search);
-      const token = params.get('access_token');
-      const expiresIn = Number(params.get('expires_in')) || 3600;
-
-      if (token) {
-        const info = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: { Authorization: `Bearer ${token}` },
-        }).then((r) => r.json());
-
-        saveSession({
-          token,
-          expiresAt: Date.now() + expiresIn * 1000,
-          email: info.email,
-          name: info.name,
-          picture: info.picture,
-        });
-        return getUser();
-      }
-    } catch (err) {
-      console.warn('launchWebAuthFlow exception:', err);
-      const msg = err.message || '';
-      if (msg.includes('User cancelled') || msg.includes('লগইন বাতিল')) {
-        throw new Error('সাইন-ইন বাতিল করা হয়েছে');
-      }
-      // If redirect_uri_mismatch or not registered, seamlessly open Web Auth Bridge
-      openWebAuthBridge();
-      throw new Error(`ওয়েব অথ ব্রিজ খোলা হয়েছে! ব্রাউজার ট্যাবে ১-ক্লিকে সাইন-ইন সম্পন্ন করুন 🌐`);
-    }
-  }
-
-  // Fallback: Launch Web Auth Bridge
+  // Always use the official Web Auth Bridge where Google Sign-in works 100% on the authorized origin
+  // without triggering Error 400: redirect_uri_mismatch
   openWebAuthBridge();
-  throw new Error(`ওয়েব অথ ব্রিজ খোলা হয়েছে! ব্রাউজার ট্যাবে ১-ক্লিকে সাইন-ইন সম্পন্ন করুন 🌐`);
+  return {
+    pending: true,
+    message: 'ওয়েব অথ ব্রিজ খোলা হয়েছে! ব্রাউজার ট্যাবে সাইন-ইন সম্পন্ন করুন 🌐',
+  };
 }
 
 // Fallback OAuth2 popup for Web when GSI script is blocked by ad-blocker

@@ -46,15 +46,15 @@ let swRegistration = null;
 const revealed = new Map(); // id -> timeout for "hide codes" mode
 
 function isLightTheme(t) {
-  return t === 'liquid-champagne' || t === 'matcha-zen' || t === 'light';
+  return t === 'crystal-pearl' || t === 'light';
 }
 
 function resolvedTheme() {
   if (settings.theme === 'auto') {
-    return matchMedia('(prefers-color-scheme: light)').matches ? 'liquid-champagne' : 'nordic-aurora';
+    return matchMedia('(prefers-color-scheme: light)').matches ? 'crystal-pearl' : 'green-forest';
   }
-  if (settings.theme === 'light') return 'liquid-champagne';
-  if (settings.theme === 'dark') return 'nordic-aurora';
+  if (settings.theme === 'light') return 'crystal-pearl';
+  if (settings.theme === 'dark') return 'green-forest';
   return settings.theme;
 }
 

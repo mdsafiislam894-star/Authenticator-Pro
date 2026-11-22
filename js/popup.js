@@ -19,6 +19,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (popoutBtn) popoutBtn.style.display = 'none';
   }
 
+  // Web App button handler (Open full live app)
+  const webAppBtn = document.getElementById('webAppBtn');
+  if (webAppBtn) {
+    webAppBtn.onclick = () => {
+      if (typeof chrome !== 'undefined' && chrome.tabs?.create) {
+        chrome.tabs.create({ url: 'https://mdsafiislam894-star.github.io/Authenticator-Pro/' });
+      } else {
+        window.open('https://mdsafiislam894-star.github.io/Authenticator-Pro/', '_blank');
+      }
+    };
+  }
+
   // Pop-out button click handler
   const popoutBtn = document.getElementById('popoutBtn');
   if (popoutBtn) {

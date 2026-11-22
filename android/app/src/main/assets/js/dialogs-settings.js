@@ -64,12 +64,7 @@ export function openMenu(ctx) {
       telegram: () => openTelegramDialog(ctx),
       sync: () => openSync(ctx),
       print: () => ctx.printEmergencySheet(),
-      theme: () => {
-        const cur = ctx.resolvedTheme();
-        const isL = cur.includes('champagne') || cur.includes('matcha') || cur.includes('light');
-        ctx.settings.theme = isL ? 'nordic-aurora' : 'liquid-champagne';
-        ctx.saveSettings();
-      },
+      theme: () => ctx.openThemePicker(),
       privacy: () => {
         ctx.settings.hideCodes = !ctx.settings.hideCodes;
         ctx.saveSettings();
@@ -274,7 +269,19 @@ export function openSync(ctx) {
     toast('Client ID সেভ হয়েছে ✅ এখন Continue with Google চাপুন');
   };
   if (q('#in')) q('#in').onclick = async () => {
-    try { await drive.signIn(true); m.close(); await afterSignIn(ctx); } catch (e) { toast(e.message); }
+    try {
+      if (drive.isExtension()) {
+        m.close();
+        drive.openWebAuthBridge();
+        toast('Google সাইন-ইন ট্যাব খোলা হয়েছে! ব্রাউজার ট্যাবে অ্যাকাউন্ট সিলেক্ট করুন 🌐');
+        return;
+      }
+      await drive.signIn(true);
+      m.close();
+      await afterSignIn(ctx);
+    } catch (e) {
+      toast(e.message);
+    }
   };
   if (q('#now')) q('#now').onclick = async () => { m.close(); await ctx.doSync(true); };
   if (q('#pass')) q('#pass').onclick = () => { m.close(); askPassphrase(ctx, 'change'); };
