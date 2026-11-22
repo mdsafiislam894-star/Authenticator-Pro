@@ -5,9 +5,18 @@ function loadJsQR() {
   return new Promise((resolve, reject) => {
     if (globalThis.jsQR) return resolve(globalThis.jsQR);
     const s = document.createElement('script');
-    s.src = JSQR_URL;
+    s.src = typeof chrome !== 'undefined' && chrome.runtime?.getURL
+      ? chrome.runtime.getURL('vendor/jsqr.js')
+      : 'vendor/jsqr.js';
     s.onload = () => resolve(globalThis.jsQR);
-    s.onerror = () => reject(new Error('QR লাইব্রেরি লোড হয়নি (ইন্টারনেট দরকার)'));
+    s.onerror = () => {
+      // Fallback to CDN for web hosting
+      const s2 = document.createElement('script');
+      s2.src = JSQR_URL;
+      s2.onload = () => resolve(globalThis.jsQR);
+      s2.onerror = () => reject(new Error('QR লাইব্রেরি লোড হয়নি'));
+      document.head.appendChild(s2);
+    };
     document.head.appendChild(s);
   });
 }

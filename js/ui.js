@@ -129,9 +129,19 @@ function loadQrLib() {
   if (globalThis.qrcode) return Promise.resolve();
   qrLibPromise ||= new Promise((resolve, reject) => {
     const s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js';
+    // Prefer local vendor script (required for Chrome extension CSP and offline support)
+    s.src = typeof chrome !== 'undefined' && chrome.runtime?.getURL
+      ? chrome.runtime.getURL('vendor/qrcode.js')
+      : 'vendor/qrcode.js';
     s.onload = resolve;
-    s.onerror = () => reject(new Error('QR জেনারেটর লোড হয়নি (ইন্টারনেট দরকার)'));
+    s.onerror = () => {
+      // Fallback to CDN for web hosting if vendor script is missing
+      const s2 = document.createElement('script');
+      s2.src = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js';
+      s2.onload = resolve;
+      s2.onerror = () => reject(new Error('QR জেনারেটর লোড হয়নি'));
+      document.head.appendChild(s2);
+    };
     document.head.appendChild(s);
   });
   return qrLibPromise;

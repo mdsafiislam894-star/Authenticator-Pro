@@ -31,13 +31,20 @@ jobs:
           fi
           node tests/test.mjs
       - uses: actions/configure-pages@v5
-      - name: Assemble site
+      - name: Assemble site & Package Extension
         run: |
           mkdir -p _site
-          cp -r index.html manifest.webmanifest sw.js css js icons _site/
+          cp -r index.html popup.html manifest.webmanifest manifest.json sw.js css js icons vendor _site/
+          mkdir -p _ext
+          cp -r manifest.json popup.html background.js css js icons vendor _ext/
+          cd _ext && zip -r ../Authenticator-Pro-Extension-v3.0.0.zip . && cd ..
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Authenticator-Pro-v3.0.0-Extension-ZIP
+          path: Authenticator-Pro-Extension-v3.0.0.zip
 
   deploy-pages:
     needs: build
@@ -62,7 +69,7 @@ jobs:
       - name: Build Native Android APK (No URL Bar, Real Standalone App)
         run: |
           mkdir -p android/app/src/main/assets
-          cp -r index.html manifest.webmanifest sw.js css js icons android/app/src/main/assets/
+          cp -r index.html popup.html manifest.webmanifest sw.js css js icons vendor android/app/src/main/assets/
           KS_PASS=$(openssl rand -hex 16)
           export KS_PASS
           keytool -genkeypair -v -keystore android.keystore -alias authpro \

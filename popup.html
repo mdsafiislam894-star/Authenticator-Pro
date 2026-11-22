@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>Authenticator Pro</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/extension-popup.css">
+</head>
+<body>
+  <!-- Animated background orbs that the Liquid Glass refracts -->
+  <div class="bg-orbs" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+  <div class="extension-shell">
+    <!-- App lock (PIN + Biometric) -->
+    <div id="lock" class="lock hidden">
+      <div class="lock-box">
+        <div class="logo">
+          <svg viewBox="0 0 100 100" class="master-app-logo" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="shieldArmorLockP" x1="15%" y1="0%" x2="85%" y2="100%">
+                <stop offset="0%" stop-color="#38bdf8"/>
+                <stop offset="25%" stop-color="#2563eb"/>
+                <stop offset="70%" stop-color="#1d2456"/>
+                <stop offset="100%" stop-color="#090d1f"/>
+              </linearGradient>
+              <linearGradient id="facetHighlightLockP" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.8"/>
+                <stop offset="50%" stop-color="#a5f3fc" stop-opacity="0.25"/>
+                <stop offset="100%" stop-color="#38bdf8" stop-opacity="0"/>
+              </linearGradient>
+              <linearGradient id="goldShackleLockP" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#fef08a"/>
+                <stop offset="45%" stop-color="#fbbf24"/>
+                <stop offset="80%" stop-color="#d97706"/>
+                <stop offset="100%" stop-color="#92400e"/>
+              </linearGradient>
+              <linearGradient id="quantumGlowLockP" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#ffffff"/>
+                <stop offset="50%" stop-color="#a5f3fc"/>
+                <stop offset="100%" stop-color="#38bdf8"/>
+              </linearGradient>
+            </defs>
+            <path d="M50 7 L85 20 C85 60 50 87 50 93 C50 87 15 60 15 20 Z" fill="url(#shieldArmorLockP)" stroke="rgba(255,255,255,0.75)" stroke-width="1.8"/>
+            <path d="M50 8 L17 21 C17 59 50 86 50 92 Z" fill="url(#facetHighlightLockP)" opacity="0.38"/>
+            <circle cx="50" cy="47" r="17" fill="rgba(6,16,38,0.75)" stroke="rgba(56,189,248,0.4)" stroke-width="1"/>
+            <path d="M42 45 L42 35 C42 30.5 45.5 27 50 27 C54.5 27 58 30.5 58 35 L58 45" fill="none" stroke="url(#goldShackleLockP)" stroke-width="3.6" stroke-linecap="round"/>
+            <rect x="36" y="42" width="28" height="22" rx="5.5" fill="url(#quantumGlowLockP)" stroke="#ffffff" stroke-width="0.8"/>
+            <circle cx="50" cy="50" r="2.5" fill="#060c1d"/>
+            <circle cx="50" cy="50" r="1" fill="#38bdf8"/>
+          </svg>
+        </div>
+        <h2>Authenticator Pro</h2>
+        <p id="lockMsg">PIN দিন</p>
+        <input id="lockPin" type="password" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="••••">
+        <button id="lockBtn" class="btn primary">আনলক</button>
+        <button id="bioBtn" class="btn block hidden">👆 বায়োমেট্রিক আনলক</button>
+      </div>
+    </div>
+
+    <!-- Floating Liquid Glass Header -->
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo-sm">
+          <svg viewBox="0 0 100 100" class="master-app-logo" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="shieldArmorTopP" x1="15%" y1="0%" x2="85%" y2="100%">
+                <stop offset="0%" stop-color="#38bdf8"/>
+                <stop offset="25%" stop-color="#2563eb"/>
+                <stop offset="70%" stop-color="#1d2456"/>
+                <stop offset="100%" stop-color="#090d1f"/>
+              </linearGradient>
+              <linearGradient id="goldShackleTopP" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#fef08a"/>
+                <stop offset="45%" stop-color="#fbbf24"/>
+                <stop offset="80%" stop-color="#d97706"/>
+              </linearGradient>
+              <linearGradient id="quantumGlowTopP" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#ffffff"/>
+                <stop offset="50%" stop-color="#a5f3fc"/>
+                <stop offset="100%" stop-color="#38bdf8"/>
+              </linearGradient>
+            </defs>
+            <path d="M50 7 L85 20 C85 60 50 87 50 93 C50 87 15 60 15 20 Z" fill="url(#shieldArmorTopP)" stroke="rgba(255,255,255,0.75)" stroke-width="1.8"/>
+            <path d="M42 45 L42 35 C42 30.5 45.5 27 50 27 C54.5 27 58 30.5 58 35 L58 45" fill="none" stroke="url(#goldShackleTopP)" stroke-width="3.6" stroke-linecap="round"/>
+            <rect x="36" y="42" width="28" height="22" rx="5.5" fill="url(#quantumGlowTopP)"/>
+            <circle cx="50" cy="50" r="2.5" fill="#060c1d"/>
+            <circle cx="50" cy="50" r="1" fill="#38bdf8"/>
+          </svg>
+        </span>
+        <span>Authenticator Pro</span>
+      </div>
+      <div class="top-actions">
+        <button id="popoutBtn" class="icon-btn popout-btn" title="আলাদা ভাসমান উইন্ডোতে খুলুন">🪟</button>
+        <button id="themeBtn" class="icon-btn" title="থিম পরিবর্তন">🎨</button>
+        <button id="syncBtn" class="icon-btn" title="সিঙ্ক অবস্থা">☁️<span class="dot off" id="syncDot"></span></button>
+        <button id="menuBtn" class="icon-btn" title="মেনু">⋮</button>
+      </div>
+    </header>
+
+    <!-- Active Tab Smart Detection Banner -->
+    <div id="activeTabBanner" class="active-tab-banner hidden">
+      <div class="atb-info">
+        <span style="font-size:18px">🎯</span>
+        <div class="atb-text">
+          <span id="atbTitle" class="atb-title">GitHub 2FA সনাক্ত হয়েছে</span>
+          <span id="atbSub" class="atb-sub">1-ক্লিকে কোড পূরণ করুন</span>
+        </div>
+      </div>
+      <button id="atbFillBtn" class="btn primary atb-btn">পেস্ট করুন ⚡</button>
+    </div>
+
+    <!-- Liquid Glass Search Pill & Filter -->
+    <div class="searchbar">
+      <input id="search" type="search" placeholder="খুঁজুন (নাম, ইমেইল, গ্রুপ)..." autocomplete="off">
+      <select id="sort" title="সাজানোর ধরন" style="max-width: 95px">
+        <option value="manual">কাস্টম</option>
+        <option value="issuer">নাম A-Z</option>
+        <option value="usage">জনপ্রিয়</option>
+        <option value="recent">নতুন</option>
+      </select>
+    </div>
+
+    <!-- Category Chips -->
+    <div id="chips" class="chips"></div>
+
+    <!-- Accounts List -->
+    <main id="list" class="list"></main>
+
+    <!-- Empty State -->
+    <div id="empty" class="empty hidden">
+      <div class="empty-ico">🛡️</div>
+      <h3 style="font-size:15px">কোনো অ্যাকাউন্ট নেই</h3>
+      <p style="font-size:12px">নিচের <b>+</b> চেপে অ্যাকাউন্ট যোগ করুন বা রিকভারি কোড ভল্ট খুলুন।</p>
+    </div>
+
+    <!-- Batch Mode Bar -->
+    <div id="batchBar" class="batch-bar hidden">
+      <span id="batchCount" class="batch-count">০টি নির্বাচিত</span>
+      <button id="batchActionBtn" class="btn primary sm">অ্যাকশন ▾</button>
+      <button id="batchCloseBtn" class="mini" title="বাতিল">✕</button>
+    </div>
+
+    <!-- Floating Action Button -->
+    <button id="fab" class="fab" title="অ্যাকাউন্ট যোগ করুন">+</button>
+  </div>
+
+  <!-- Dynamic Liquid Glass dialogs mount here -->
+  <div id="modalRoot"></div>
+  <div id="toast" class="toast hidden"></div>
+
+  <script type="module" src="js/popup.js"></script>
+</body>
+</html>

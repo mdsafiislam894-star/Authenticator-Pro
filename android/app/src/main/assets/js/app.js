@@ -834,7 +834,7 @@ if (action === 'scan') setTimeout(() => openScan(ctx), 300);
 else if (action === 'sync') setTimeout(() => openSync(ctx), 300);
 
 // Service Worker registration + automatic one-tap update notifications
-if ('serviceWorker' in navigator) {
+if (location.protocol !== 'chrome-extension:' && 'serviceWorker' in navigator) {
   let reloading = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (!reloading) { reloading = true; location.reload(); }
