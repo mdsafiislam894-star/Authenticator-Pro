@@ -3,6 +3,7 @@
 import { openModal, esc, toast, confirmDialog, copyText } from './ui.js';
 import { updateAccount } from './store.js';
 import { renderAccountAvatar } from './brand-icons.js';
+import { playDropletSound, playSuccessChime, haptic } from './audio.js';
 
 // Clean and extract recovery codes from any text block (GitHub, Google, Binance, Discord, etc.)
 export function parseRecoveryText(raw) {
@@ -13,25 +14,25 @@ export function parseRecoveryText(raw) {
   const seen = new Set();
 
   // Words that indicate non-code prose/instructions
-  const proseKeywords = /^(enable|download|keep|your|recovery|codes|backup|two-factor|2fa|authentication|you|can|use|as|second|factor|authenticate|in|case|lose|access|device|recommend|saving|secure|password|manager|such|1password|authy|keeper|safe|spot|if|cancel|saved|step|verify|unable|scan)/i;
+  const proseKeywords = /^(enable|download|keep|your|recovery|codes|backup|two-factor|2fa|authentication|you|can|use|as|second|factor|authenticate|in|case|lose|access|device|recommend|saving|secure|password|manager|such|1password|authy|keeper|safe|spot|if|cancel|saved|step|verify|unable|scan|generated)/i;
 
   for (let line of lines) {
     line = line.trim();
     if (!line) continue;
 
-    // Remove markdown list markers, bullets, numbered lists (e.g. "• ", "1. ", "- ", "* ")
+    // Remove markdown list markers, bullets, numbered lists (e.g. "• ", "1. ", "- ", "* ", "[ ]")
     line = line.replace(/^[•\*\-\+]\s*/, '').replace(/^\d+[\.\)]\s*/, '').replace(/^\[[ xX]\]\s*/, '').trim();
 
     // Line might have multiple codes side-by-side (e.g. GitHub table: "0ed6f-6d077    c8edc-934ad")
     // Split by tabs, 2+ spaces, or commas
     const segments = line.split(/\t+|\s{2,}|,\s*/);
     for (let seg of segments) {
-      seg = seg.trim().replace(/^•\s*/, '');
+      seg = seg.trim().replace(/^[•\*\-]\s*/, '');
       if (!seg) continue;
       if (proseKeywords.test(seg)) continue;
 
       // Extract code tokens:
-      // Case 1: GitHub / Discord style: e.g. "0ed6f-6d077" or "bb72b-87098" (alphanumeric hyphen alphanumeric)
+      // Case 1: GitHub / Discord style: e.g. "0ed6f-6d077" or "bb72b-87098" (alphanumeric hyphen/underscore alphanumeric)
       // Case 2: Google 8-digit codes: e.g. "1234 5678" or "12345678"
       // Case 3: Alphanumeric block: 6 to 24 chars
       const tokenMatch = seg.match(/\b([A-Za-z0-9]{3,8}[-_][A-Za-z0-9]{3,8})\b/) ||
@@ -58,22 +59,28 @@ export function parseRecoveryText(raw) {
 
 // Open Smart Recovery Codes Vault for a specific account
 export function openRecoveryCodesDialog(ctx, accountId) {
-  const account = ctx.vault.accounts.find((a) => a.id === accountId);
-  if (!account) return;
+  const getAccount = () => ctx.vault.accounts.find((a) => a.id === accountId);
+  const initialAccount = getAccount();
+  if (!initialAccount) return;
 
-  if (!Array.isArray(account.recoveryCodes)) {
-    account.recoveryCodes = [];
+  if (!Array.isArray(initialAccount.recoveryCodes)) {
+    initialAccount.recoveryCodes = [];
   }
 
   let hideCodes = false;
 
   const render = () => {
-    const codes = account.recoveryCodes;
+    const account = getAccount() || initialAccount;
+    const codes = Array.isArray(account.recoveryCodes) ? account.recoveryCodes : [];
     const total = codes.length;
     const unused = codes.filter((c) => !c.used).length;
     const used = total - unused;
     const pct = total > 0 ? Math.round((unused / total) * 100) : 0;
     const title = account.issuer || account.name || 'অ্যাকাউন্ট';
+
+    // Find next available unused code
+    const nextUnusedIdx = codes.findIndex((c) => !c.used);
+    const nextCode = nextUnusedIdx !== -1 ? codes[nextUnusedIdx] : null;
 
     // Color tier for progress bar
     const barColor = pct > 50 ? 'var(--ok, #10b981)' : pct > 20 ? 'var(--warn, #f59e0b)' : 'var(--danger, #ef4444)';
@@ -84,7 +91,7 @@ export function openRecoveryCodesDialog(ctx, accountId) {
           ${renderAccountAvatar(account)}
           <div class="rd-title-box">
             <h3 style="margin:0;font-size:18px">${esc(title)}</h3>
-            <span class="rd-subtitle">${esc(account.name || '')} • 🔐 রিকভারি কোড</span>
+            <span class="rd-subtitle">${esc(account.name || '')} • 🔐 রিকভারি কোড ভল্ট</span>
           </div>
         </div>
       </div>
@@ -109,8 +116,8 @@ export function openRecoveryCodesDialog(ctx, accountId) {
 
       <!-- Quick Action Buttons -->
       <div class="recovery-actions-bar">
-        <button class="btn mini-action-btn primary" id="btnCopyNext" ${unused === 0 ? 'disabled' : ''} title="প্রথম অব্যবহৃত কোডটি কপি করুন">
-          📋 পরবর্তী কোড কপি
+        <button class="btn mini-action-btn primary" id="btnCopyNext" ${!nextCode ? 'disabled style="opacity:.4"' : ''} title="পরবর্তী অব্যবহৃত কোডটি এক ক্লিকে নিন">
+          📋 ${nextCode ? `পরবর্তী কোড কপি (#${nextUnusedIdx + 1})` : 'কোনো কোড বাকি নেই'}
         </button>
         <button class="btn mini-action-btn" id="btnAddCodes">
           ➕ কোড যোগ / পেস্ট
@@ -118,7 +125,7 @@ export function openRecoveryCodesDialog(ctx, accountId) {
         <button class="btn mini-action-btn" id="btnToggleMask" title="কোড লুকান বা দেখান">
           ${hideCodes ? '👁️ দেখান' : '🙈 লুকান'}
         </button>
-        <button class="btn mini-action-btn" id="btnDownload" ${total === 0 ? 'disabled' : ''} title="টেক্সট ফাইলে ব্যাকআপ নামান">
+        <button class="btn mini-action-btn" id="btnDownload" ${total === 0 ? 'disabled style="opacity:.4"' : ''} title="টেক্সট ফাইলে ব্যাকআপ নামান">
           📥 ডাউনলোড
         </button>
       </div>
@@ -127,20 +134,20 @@ export function openRecoveryCodesDialog(ctx, accountId) {
       <div class="recovery-codes-scroll">
         ${total === 0 ? `
           <div class="empty-recovery-state">
-            <span style="font-size:38px;display:block;margin-bottom:8px">🔐</span>
-            <b>কোনো রিকভারি কোড সেভ করা নেই</b>
-            <p style="font-size:12px;color:var(--muted);max-width:320px;margin:8px auto">
-              GitHub, Google, Binance বা যেকোনো সার্ভিসের 2FA ব্যাকআপ কোডগুলো এখানে সুরক্ষিত রাখুন।
+            <span style="font-size:42px;display:block;margin-bottom:10px">🔐</span>
+            <b style="font-size:16px">কোনো রিকভারি কোড সেভ করা নেই</b>
+            <p style="font-size:13px;color:var(--muted);max-width:340px;margin:8px auto;line-height:1.5">
+              GitHub, Google, Binance বা যেকোনো সাইটের 2FA ব্যাকআপ কোডগুলো এখানে সুরক্ষিত রাখুন।
             </p>
-            <button class="btn primary" id="btnEmptyAdd" style="margin-top:10px">
+            <button class="btn primary" id="btnEmptyAdd" style="margin-top:12px;padding:10px 20px">
               📋 স্মার্ট পেস্ট দিয়ে কোড যোগ করুন
             </button>
           </div>` : `
           <div class="recovery-codes-grid">
             ${codes.map((item, idx) => `
-              <div class="recovery-code-card ${item.used ? 'is-used' : ''}" data-idx="${idx}">
+              <div class="recovery-code-card ${item.used ? 'is-used' : ''}" data-card-idx="${idx}">
                 <div class="rcc-top">
-                  <span class="rcc-num">#${idx + 1}</span>
+                  <span class="rcc-num">#${String(idx + 1).padStart(2, '0')}</span>
                   <label class="rcc-used-toggle" title="${item.used ? 'ব্যবহৃত মার্ক তোলা হবে' : 'ব্যবহৃত হিসেবে চিহ্নিত করুন'}">
                     <input type="checkbox" class="cb-used" data-idx="${idx}" ${item.used ? 'checked' : ''}>
                     <span>${item.used ? 'ব্যবহৃত ✓' : 'ব্যবহারযোগ্য'}</span>
@@ -152,8 +159,8 @@ export function openRecoveryCodesDialog(ctx, accountId) {
                   </code>
                 </div>
                 <div class="rcc-footer">
-                  <button class="rcc-btn rcc-copy" data-copy-idx="${idx}" title="কপি করুন">
-                    📋 কপি
+                  <button class="rcc-btn rcc-copy" data-copy-idx="${idx}" title="এই কোডটি কপি করুন">
+                    📋 কপি করুন
                   </button>
                   <button class="rcc-btn rcc-del" data-del-idx="${idx}" title="এই কোডটি মুছুন">
                     🗑️
@@ -174,21 +181,39 @@ export function openRecoveryCodesDialog(ctx, accountId) {
 
   const m = openModal(render());
 
+  const refresh = () => {
+    // Note: m.el is the .sheet element returned by openModal
+    m.el.innerHTML = render();
+    bindEvents();
+  };
+
   const bindEvents = () => {
-    // Copy Next Unused Code
+    const account = getAccount() || initialAccount;
+    const codes = account.recoveryCodes || [];
+
+    // Copy Next Unused Code ("সুন্দর মতো একটা একটা করে দিবে")
     const copyNextBtn = m.el.querySelector('#btnCopyNext');
     if (copyNextBtn) {
       copyNextBtn.onclick = async () => {
-        const next = account.recoveryCodes.find((c) => !c.used);
-        if (!next) return toast('কোনো অব্যবহৃত কোড নেই');
+        const nextIdx = codes.findIndex((c) => !c.used);
+        if (nextIdx === -1) return toast('কোনো অব্যবহৃত কোড নেই');
+        const next = codes[nextIdx];
         if (await copyText(next.code)) {
-          toast(`কোড "${next.code}" কপি হয়েছে! ✅`, 'ব্যবহৃত মার্ক করুন', () => {
-            next.used = true;
-            next.usedAt = Date.now();
-            updateAccount(ctx.vault, account.id, { recoveryCodes: account.recoveryCodes });
+          playSuccessChime(ctx.settings || {});
+          haptic('success');
+          // Automatically mark it used
+          next.used = true;
+          next.usedAt = Date.now();
+          updateAccount(ctx.vault, account.id, { recoveryCodes: codes });
+          ctx.commit();
+          refresh();
+          toast(`কোড #${nextIdx + 1} (${next.code}) কপি ও ব্যবহৃত চিহ্নিত হয়েছে ✅`, 'UNDO', () => {
+            next.used = false;
+            next.usedAt = null;
+            updateAccount(ctx.vault, account.id, { recoveryCodes: codes });
             ctx.commit();
             refresh();
-          }, 8000);
+          }, 7000);
         }
       };
     }
@@ -221,28 +246,38 @@ export function openRecoveryCodesDialog(ctx, accountId) {
     m.el.querySelectorAll('.cb-used').forEach((cb) => {
       cb.onchange = (e) => {
         const idx = +e.target.dataset.idx;
-        if (account.recoveryCodes[idx]) {
-          account.recoveryCodes[idx].used = e.target.checked;
-          account.recoveryCodes[idx].usedAt = e.target.checked ? Date.now() : null;
-          updateAccount(ctx.vault, account.id, { recoveryCodes: account.recoveryCodes });
+        if (codes[idx]) {
+          codes[idx].used = e.target.checked;
+          codes[idx].usedAt = e.target.checked ? Date.now() : null;
+          updateAccount(ctx.vault, account.id, { recoveryCodes: codes });
           ctx.commit();
           refresh();
-          toast(e.target.checked ? 'কোডটি ব্যবহৃত হিসেবে মার্ক করা হয়েছে ✓' : 'ব্যবহারযোগ্য করা হয়েছে');
+          toast(e.target.checked ? `কোড #${idx + 1} ব্যবহৃত হিসেবে চিহ্নিত ✓` : `কোড #${idx + 1} ব্যবহারযোগ্য করা হয়েছে`);
         }
       };
     });
 
-    // 1-Tap Copy buttons
+    // 1-Tap Copy buttons for specific code card
     m.el.querySelectorAll('[data-copy-idx]').forEach((b) => {
       b.onclick = async () => {
         const idx = +b.dataset.copyIdx;
-        const item = account.recoveryCodes[idx];
+        const item = codes[idx];
         if (!item) return;
         if (await copyText(item.code)) {
-          toast(`কোড #${idx + 1} কপি হয়েছে ✅`, !item.used ? 'ব্যবহৃত?' : undefined, () => {
+          playDropletSound(ctx.settings || {});
+          haptic('light');
+          const wasUsed = item.used;
+          if (!wasUsed) {
             item.used = true;
             item.usedAt = Date.now();
-            updateAccount(ctx.vault, account.id, { recoveryCodes: account.recoveryCodes });
+            updateAccount(ctx.vault, account.id, { recoveryCodes: codes });
+            ctx.commit();
+            refresh();
+          }
+          toast(`কোড #${idx + 1} (${item.code}) কপি হয়েছে ✅` + (!wasUsed ? ' (ব্যবহৃত চিহ্নিত)' : ''), !wasUsed ? 'UNDO' : undefined, () => {
+            item.used = false;
+            item.usedAt = null;
+            updateAccount(ctx.vault, account.id, { recoveryCodes: codes });
             ctx.commit();
             refresh();
           }, 6000);
@@ -254,8 +289,8 @@ export function openRecoveryCodesDialog(ctx, accountId) {
     m.el.querySelectorAll('[data-del-idx]').forEach((b) => {
       b.onclick = () => {
         const idx = +b.dataset.delIdx;
-        account.recoveryCodes.splice(idx, 1);
-        updateAccount(ctx.vault, account.id, { recoveryCodes: account.recoveryCodes });
+        codes.splice(idx, 1);
+        updateAccount(ctx.vault, account.id, { recoveryCodes: codes });
         ctx.commit();
         refresh();
         toast('কোডটি মুছে ফেলা হয়েছে');
@@ -266,7 +301,7 @@ export function openRecoveryCodesDialog(ctx, accountId) {
     const clearBtn = m.el.querySelector('#btnClearAll');
     if (clearBtn) {
       clearBtn.onclick = async () => {
-        if (!(await confirmDialog('সব রিকভারি কোড মুছবেন?', 'এই অ্যাকাউন্টের সংরক্ষিত সকল রিকভারি কোড মুছে যাবে।', 'মুছুন', true))) return;
+        if (!(await confirmDialog('সব রিকভারি কোড মুছবেন?', `"${account.issuer || account.name}" এর সংরক্ষিত সকল রিকভারি কোড মুছে যাবে।`, 'মুছুন', true))) return;
         account.recoveryCodes = [];
         updateAccount(ctx.vault, account.id, { recoveryCodes: [] });
         ctx.commit();
@@ -280,17 +315,13 @@ export function openRecoveryCodesDialog(ctx, accountId) {
     if (closeBtn) closeBtn.onclick = () => m.close();
   };
 
-  const refresh = () => {
-    m.el.querySelector('.modal').innerHTML = render();
-    bindEvents();
-  };
-
   bindEvents();
 }
 
 // Smart Paste Dialog: Paste text or drop text file
 export function openSmartPasteDialog(ctx, accountId, onDone) {
-  const account = ctx.vault.accounts.find((a) => a.id === accountId);
+  const getAccount = () => ctx.vault.accounts.find((a) => a.id === accountId);
+  const account = getAccount();
   if (!account) return;
 
   const m = openModal(`
@@ -303,7 +334,7 @@ export function openSmartPasteDialog(ctx, accountId, onDone) {
     </div>
     
     <p class="hint" style="margin-bottom:12px">
-      GitHub, Google, Binance বা যেকোনো সাইটের রিকভারি কোডগুলো হুবহু কপি করে এখানে পেস্ট করুন, অথবা ডাউনলোড করা টেক্সট (.txt) ফাইল সিলেক্ট করুন। আমাদের স্মার্ট সিস্টেম নিজে থেকেই আলাদা আলাদা কোড চিনে নেবে।
+      GitHub, Google, Binance বা যেকোনো সাইটের রিকভারি কোডগুলো হুবহু কপি করে এখানে পেস্ট করুন, অথবা ডাউনলোড করা টেক্সট (.txt) ফাইল সিলেক্ট করুন। আমাদের স্মার্ট সিস্টেম নিজে থেকেই সবগুলো কোড সাজিয়ে নেবে।
     </p>
 
     <div class="field">
@@ -372,31 +403,36 @@ export function openSmartPasteDialog(ctx, accountId, onDone) {
   saveBtn.onclick = () => {
     if (!currentDetected.length) return toast('কোনো কোড পাওয়া যায়নি');
 
-    if (!Array.isArray(account.recoveryCodes)) {
-      account.recoveryCodes = [];
-    }
+    const targetAccount = getAccount();
+    if (!targetAccount) return toast('অ্যাকাউন্ট খুঁজে পাওয়া যায়নি');
 
-    const existingSet = new Set(account.recoveryCodes.map((c) => c.code.toLowerCase()));
-    let addedCount = 0;
-
-    for (const codeStr of currentDetected) {
-      if (!existingSet.has(codeStr.toLowerCase())) {
-        account.recoveryCodes.push({
-          id: Math.random().toString(36).slice(2, 10),
-          code: codeStr,
-          used: false,
-          usedAt: null,
-          addedAt: Date.now(),
-        });
-        existingSet.add(codeStr.toLowerCase());
-        addedCount++;
+    // Create a map of existing codes so we preserve already used status
+    const existingMap = new Map();
+    if (Array.isArray(targetAccount.recoveryCodes)) {
+      for (const item of targetAccount.recoveryCodes) {
+        if (item && item.code) existingMap.set(item.code.toLowerCase().trim(), item);
       }
     }
 
-    updateAccount(ctx.vault, account.id, { recoveryCodes: account.recoveryCodes });
+    // Preserve the user's EXACT order of codes
+    const finalCodes = currentDetected.map((codeStr, idx) => {
+      const clean = codeStr.trim();
+      const existing = existingMap.get(clean.toLowerCase());
+      return {
+        id: existing?.id || Math.random().toString(36).slice(2, 10),
+        code: clean,
+        used: existing ? Boolean(existing.used) : false,
+        usedAt: existing ? existing.usedAt : null,
+        addedAt: existing ? existing.addedAt : Date.now(),
+        order: idx,
+      };
+    });
+
+    targetAccount.recoveryCodes = finalCodes;
+    updateAccount(ctx.vault, targetAccount.id, { recoveryCodes: finalCodes });
     ctx.commit();
     m.close();
-    toast(`${addedCount}টি নতুন রিকভারি কোড সেভ হয়েছে! 🎉`);
+    toast(`${finalCodes.length}টি রিকভারি কোড সফলভাবে সংরক্ষিত হয়েছে! 🎉`);
     if (onDone) onDone();
   };
 }
