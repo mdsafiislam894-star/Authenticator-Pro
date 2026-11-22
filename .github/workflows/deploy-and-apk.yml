@@ -63,9 +63,11 @@ jobs:
         run: |
           mkdir -p android/app/src/main/assets
           cp -r index.html manifest.webmanifest sw.js css js icons android/app/src/main/assets/
+          KS_PASS=$(openssl rand -hex 16)
+          export KS_PASS
           keytool -genkeypair -v -keystore android.keystore -alias authpro \
             -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass authpro123 -keypass authpro123 \
+            -storepass:env KS_PASS -keypass:env KS_PASS \
             -dname "CN=Authenticator Pro, OU=App, O=Safi, L=Rajshahi, ST=Rajshahi, C=BD"
           cd android
           gradle wrapper --gradle-version 8.11.1
