@@ -6,7 +6,7 @@ import * as drive from './drive.js';
 import * as sync from './sync.js';
 import { openAddMenu, openScan } from './dialogs-add.js';
 import { openEdit, openTrash } from './dialogs-manage.js';
-import { openMenu, openSync, openTelegramDialog, openSecurity } from './dialogs-settings.js';
+import { openMenu, openSync, openTelegramDialog, openSecurity, afterSignIn } from './dialogs-settings.js';
 import { playDropletSound, playSuccessChime, haptic } from './audio.js';
 import {
   openThemePicker, openSecurityAudit, openFocusView,
@@ -173,8 +173,9 @@ async function checkForUpdate() {
 function refreshSyncDot(state) {
   const dot = $('#syncDot');
   const user = drive.getUser();
-  const signedIn = !!user && !!sync.getPassphrase();
-  dot.className = 'dot ' + (state || (signedIn ? 'on' : 'off'));
+  const hasPass = !!sync.getPassphrase();
+  const signedIn = !!user && hasPass;
+  if (dot) dot.className = 'dot ' + (state || (signedIn ? 'on' : (user ? 'busy' : 'off')));
 
   const iconEl = $('#syncIcon');
   if (iconEl) {
@@ -184,12 +185,37 @@ function refreshSyncDot(state) {
   }
   const banner = $('#syncBanner');
   if (banner) {
-    banner.classList.toggle('hidden', signedIn || settings.bannerDismissed || reorderMode);
+    if (user && !hasPass) {
+      banner.classList.remove('hidden');
+      const textEl = banner.querySelector('.sync-banner-text');
+      if (textEl) {
+        textEl.innerHTML = '<b>🔑 ব্যাকআপ পাসফ্রেজ দিন</b><span>Google ড্রাইভ থেকে সব কোড রিস্টোর করতে পাসফ্রেজ দিন</span>';
+      }
+      const btnEl = banner.querySelector('#bannerSyncBtn');
+      if (btnEl) btnEl.textContent = 'পাসফ্রেজ দিন';
+    } else {
+      banner.classList.toggle('hidden', signedIn || settings.bannerDismissed || reorderMode);
+      const textEl = banner.querySelector('.sync-banner-text');
+      if (textEl) {
+        textEl.innerHTML = '<b>☁️ অটো-ব্যাকআপ চালু করুন</b><span>Google-এ কানেক্ট করলে নতুন ফোনেই সব কোড ফেরত পাবেন</span>';
+      }
+      const btnEl = banner.querySelector('#bannerSyncBtn');
+      if (btnEl) btnEl.textContent = 'কানেক্ট';
+    }
   }
 }
 
 async function doSync(manual = false) {
-  if (!drive.getUser() || !sync.getPassphrase()) return;
+  const user = drive.getUser();
+  const pass = sync.getPassphrase();
+  if (!user) {
+    if (manual) openSync(ctx);
+    return;
+  }
+  if (!pass) {
+    if (manual) afterSignIn(ctx);
+    return;
+  }
   refreshSyncDot('busy');
   try {
     const r = await sync.syncNow(vault);
@@ -284,7 +310,13 @@ const ctx = {
   openRecoveryVault: () => openGlobalRecoveryVault(ctx),
   openSync: () => openSync(ctx),
   openTrash: () => openTrash(ctx),
+  refreshVault: () => {
+    vault = loadVault();
+    render();
+    refreshSyncDot();
+  },
 };
+window.authProCtx = ctx;
 
 // ---------- rendering ----------
 function visibleAccounts() {
@@ -308,19 +340,21 @@ function visibleAccounts() {
 }
 
 function renderChips() {
+  const groupsEl = $('#groups') || $('#chips');
+  if (!groupsEl) return;
   const groups = vault.groups || [];
   const hasPinned = vault.accounts.some((a) => a.pinned);
   const items = [{ id: '', label: 'সব' }];
   if (hasPinned) items.push({ id: '__pinned__', label: '⭐ প্রিয়' });
   groups.forEach((g) => items.push({ id: g, label: g }));
 
-  $('#groups').innerHTML = items.length > 1
+  groupsEl.innerHTML = items.length > 1
     ? items.map((it) =>
         `<button class="chip ${settings.group === it.id ? 'active' : ''}" data-g="${esc(it.id)}">${esc(it.label)}</button>`
       ).join('')
     : '';
 
-  $('#groups').querySelectorAll('.chip').forEach((c) => (c.onclick = () => {
+  groupsEl.querySelectorAll('.chip').forEach((c) => (c.onclick = () => {
     playDropletSound(settings);
     haptic('light');
     settings.group = c.dataset.g;
@@ -484,16 +518,18 @@ function render() {
   const list = visibleAccounts();
   const sortEl = $('#sort');
   if (sortEl) sortEl.value = settings.sort;
-  $('#reorderBar').classList.toggle('hidden', !reorderMode);
+  $('#reorderBar')?.classList.toggle('hidden', !reorderMode);
   renderChips();
-  $('#empty').classList.toggle('hidden', vault.accounts.length > 0);
+  $('#empty')?.classList.toggle('hidden', vault.accounts.length > 0);
   const badge = $('#countBadge');
   if (badge) badge.textContent = vault.accounts.length;
 
-  $('#list').innerHTML = list.map((a, i) => cardHtml(a, i, list.length)).join('');
+  const listEl = $('#list');
+  if (!listEl) return;
+  listEl.innerHTML = list.map((a, i) => cardHtml(a, i, list.length)).join('');
 
   const orderedIds = list.map((a) => a.id);
-  $('#list').querySelectorAll('.card-wrap').forEach((wrap) => {
+  listEl.querySelectorAll('.card-wrap').forEach((wrap) => {
     const id = wrap.dataset.wrapId;
     const a = vault.accounts.find((x) => x.id === id);
     if (!a) return;
@@ -699,7 +735,15 @@ if (themeBtn) {
 const syncBtn = $('#syncBtn');
 if (syncBtn) syncBtn.onclick = () => openSync(ctx);
 const bannerSyncBtn = $('#bannerSyncBtn');
-if (bannerSyncBtn) bannerSyncBtn.onclick = () => openSync(ctx);
+if (bannerSyncBtn) bannerSyncBtn.onclick = () => {
+  const user = drive.getUser();
+  const hasPass = !!sync.getPassphrase();
+  if (user && !hasPass) {
+    afterSignIn(ctx);
+  } else {
+    openSync(ctx);
+  }
+};
 const bannerCloseBtn = $('#bannerCloseBtn');
 if (bannerCloseBtn) bannerCloseBtn.onclick = () => {
   settings.bannerDismissed = true;
@@ -874,7 +918,14 @@ async function handleWebAuthBridge(extId) {
       let delivered = false;
       if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
         try {
-          chrome.runtime.sendMessage(extId, { type: 'AUTH_BRIDGE_SUCCESS', session }, (resp) => {
+          const pass = sync.getPassphrase();
+          const currentVault = loadVault();
+          chrome.runtime.sendMessage(extId, {
+            type: 'AUTH_BRIDGE_SUCCESS',
+            session,
+            passphrase: pass || '',
+            vault: currentVault
+          }, (resp) => {
             if (resp?.success || !chrome.runtime?.lastError) {
               delivered = true;
               statusEl.innerHTML = `<span style="color:var(--ok)">🎉 এক্সটেনশনে সিঙ্ক সফলভাবে চালু হয়েছে!</span><br><small>এই ট্যাবটি ৩ সেকেন্ডে বন্ধ হয়ে যাবে...</small>`;

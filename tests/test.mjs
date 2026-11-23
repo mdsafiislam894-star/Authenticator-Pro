@@ -253,4 +253,31 @@ await t('all 8 brand-new luxury themes (Forest, Sea, Sakura, Vampire, Halloween,
   }
 });
 
+await t('popup.html and index.html have all required DOM element IDs to prevent runtime errors', () => {
+  const popupHtml = readFileSync(new URL('../popup.html', import.meta.url), 'utf8');
+  const indexHtml = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const requiredIds = [
+    'reorderBar',
+    'reorderDoneBtn',
+    'syncBanner',
+    'bannerSyncBtn',
+    'bannerCloseBtn',
+    'syncBtn',
+    'syncIcon',
+    'syncDot',
+    'groups',
+    'list',
+    'empty',
+    'search',
+    'sort',
+    'fab',
+    'modalRoot',
+    'toast'
+  ];
+  for (const id of requiredIds) {
+    assert.ok(popupHtml.includes(`id="${id}"`), `popup.html must have element id="${id}"`);
+    assert.ok(indexHtml.includes(`id="${id}"`), `index.html must have element id="${id}"`);
+  }
+});
+
 console.log(`\n${passed} tests passed`);

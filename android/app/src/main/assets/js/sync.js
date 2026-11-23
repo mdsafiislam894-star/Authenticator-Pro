@@ -7,8 +7,18 @@ const PASS_KEY = 'authpro.pass.v1';
 const META_KEY = 'authpro.syncmeta.v1';
 
 export const getPassphrase = () => localStorage.getItem(PASS_KEY) || '';
-export const setPassphrase = (p) => localStorage.setItem(PASS_KEY, p);
-export const clearPassphrase = () => localStorage.removeItem(PASS_KEY);
+export const setPassphrase = (p) => {
+  localStorage.setItem(PASS_KEY, p);
+  if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+    try { chrome.storage.local.set({ [PASS_KEY]: p }); } catch {}
+  }
+};
+export const clearPassphrase = () => {
+  localStorage.removeItem(PASS_KEY);
+  if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+    try { chrome.storage.local.remove(PASS_KEY); } catch {}
+  }
+};
 
 export function getSyncMeta() {
   try { return JSON.parse(localStorage.getItem(META_KEY)) || {}; } catch { return {}; }

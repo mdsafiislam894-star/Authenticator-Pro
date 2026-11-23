@@ -293,7 +293,7 @@ export function openSync(ctx) {
   };
 }
 
-async function afterSignIn(ctx) {
+export async function afterSignIn(ctx) {
   let exists = false;
   try { exists = await sync.remoteExists(); } catch (e) { toast(e.message); }
   askPassphrase(ctx, exists ? 'restore' : 'create');

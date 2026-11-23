@@ -69,8 +69,17 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 // Handle External Messages from authorized Web App (Web Auth Bridge)
 chrome.runtime.onMessageExternal.addListener((message, sender, sendResponse) => {
   if (message?.type === 'AUTH_BRIDGE_SUCCESS' && message?.session) {
-    chrome.storage.local.set({ 'authpro.google.v1': message.session }, () => {
-      sendResponse({ success: true, message: 'Extension session saved successfully' });
+    const toSave = {
+      'authpro.google.v1': message.session
+    };
+    if (message.passphrase) {
+      toSave['authpro.pass.v1'] = message.passphrase;
+    }
+    if (message.vault && message.vault.accounts && message.vault.accounts.length > 0) {
+      toSave['authpro.vault.v1'] = message.vault;
+    }
+    chrome.storage.local.set(toSave, () => {
+      sendResponse({ success: true, message: 'Extension session and vault saved successfully' });
     });
     return true; // Keep message channel open for async response
   }

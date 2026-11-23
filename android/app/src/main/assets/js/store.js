@@ -27,6 +27,11 @@ export function loadVault(storage = globalThis.localStorage) {
 export function saveVault(vault, storage = globalThis.localStorage) {
   vault.updatedAt = Date.now();
   storage.setItem(KEY, JSON.stringify(vault));
+  if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+    try {
+      chrome.storage.local.set({ [KEY]: vault });
+    } catch {}
+  }
 }
 
 export function newAccount(fields) {

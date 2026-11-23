@@ -95,7 +95,10 @@
         <button id="webAppBtn" class="icon-btn" title="🌐 ব্রাউজারে পূর্ণাঙ্গ ওয়েব অ্যাপ খুলুন">🌐</button>
         <button id="popoutBtn" class="icon-btn popout-btn" title="আলাদা ভাসমান উইন্ডোতে খুলুন">🪟</button>
         <button id="themeBtn" class="icon-btn" title="থিম পরিবর্তন">🎨</button>
-        <button id="syncBtn" class="icon-btn" title="সিঙ্ক অবস্থা">☁️<span class="dot off" id="syncDot"></span></button>
+        <button id="syncBtn" class="icon-btn" title="সিঙ্ক অবস্থা">
+          <span id="syncIcon">☁️</span>
+          <span id="syncDot" class="dot off"></span>
+        </button>
         <button id="menuBtn" class="icon-btn" title="মেনু">⋮</button>
       </div>
     </header>
@@ -112,6 +115,27 @@
       <button id="atbFillBtn" class="btn primary atb-btn">পেস্ট করুন ⚡</button>
     </div>
 
+    <!-- Quick Google Connect Banner (auto-hides once signed in) -->
+    <div id="syncBanner" class="sync-banner hidden">
+      <div class="sync-banner-text">
+        <b>☁️ অটো-ব্যাকআপ চালু করুন</b>
+        <span>Google-এ কানেক্ট করলে কোড সুরক্ষিত থাকবে</span>
+      </div>
+      <div class="sync-banner-actions">
+        <button id="bannerSyncBtn" class="btn primary sm">কানেক্ট</button>
+        <button id="bannerCloseBtn" class="mini" title="লুকান">✕</button>
+      </div>
+    </div>
+
+    <!-- Reorder Mode Bar -->
+    <div id="reorderBar" class="reorder-bar hidden">
+      <div class="sync-banner-text">
+        <b>↕️ সাজানো মোড চালু</b>
+        <span>↑ / ↓ চেপে অ্যাকাউন্ট উপরে বা নিচে নিন</span>
+      </div>
+      <button id="reorderDoneBtn" class="btn primary sm">সম্পন্ন</button>
+    </div>
+
     <!-- Liquid Glass Search Pill & Filter -->
     <div class="searchbar">
       <input id="search" type="search" placeholder="খুঁজুন (নাম, ইমেইল, গ্রুপ)..." autocomplete="off">
@@ -124,7 +148,7 @@
     </div>
 
     <!-- Category Chips -->
-    <div id="chips" class="chips"></div>
+    <nav id="groups" class="chips"></nav>
 
     <!-- Accounts List -->
     <main id="list" class="list"></main>

@@ -49,16 +49,76 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  // Storage listener for cross-context Google sign-in (Web Auth Bridge -> Extension)
+  // Initial sync & hydrate from chrome.storage.local
+  if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+    chrome.storage.local.get(['authpro.google.v1', 'authpro.pass.v1', 'authpro.vault.v1'], (items) => {
+      let updated = false;
+      if (items['authpro.google.v1'] && !localStorage.getItem('authpro.google.v1')) {
+        try {
+          localStorage.setItem('authpro.google.v1', JSON.stringify(items['authpro.google.v1']));
+          updated = true;
+        } catch {}
+      }
+      if (items['authpro.pass.v1'] && !localStorage.getItem('authpro.pass.v1')) {
+        try {
+          localStorage.setItem('authpro.pass.v1', items['authpro.pass.v1']);
+          updated = true;
+        } catch {}
+      }
+      if (items['authpro.vault.v1']?.accounts?.length) {
+        try {
+          const currentVault = loadVault();
+          if (!currentVault.accounts || currentVault.accounts.length === 0) {
+            localStorage.setItem('authpro.vault.v1', JSON.stringify(items['authpro.vault.v1']));
+            updated = true;
+          }
+        } catch {}
+      }
+      if (updated) {
+        if (typeof window.authProCtx?.refreshVault === 'function') {
+          window.authProCtx.refreshVault();
+        }
+        if (typeof window.authProCtx?.refreshSyncDot === 'function') {
+          window.authProCtx.refreshSyncDot();
+        }
+        if (typeof window.authProCtx?.doSync === 'function') {
+          window.authProCtx.doSync(false);
+        }
+      }
+    });
+  }
+
+  // Storage listener for cross-context Google sign-in & vault sync (Web Auth Bridge -> Extension)
   if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
     chrome.storage.onChanged.addListener((changes, area) => {
-      if (area === 'local' && changes['authpro.google.v1']) {
-        const newSession = changes['authpro.google.v1'].newValue;
-        if (newSession) {
+      if (area === 'local') {
+        let shouldRefresh = false;
+        if (changes['authpro.google.v1']?.newValue) {
           try {
-            localStorage.setItem('authpro.google.v1', JSON.stringify(newSession));
+            localStorage.setItem('authpro.google.v1', JSON.stringify(changes['authpro.google.v1'].newValue));
+            shouldRefresh = true;
           } catch {}
-          toast(`Google সিঙ্ক সক্রিয় হয়েছে: ${newSession.email || 'সংযুক্ত'} ✅`);
+        }
+        if (changes['authpro.pass.v1']?.newValue) {
+          try {
+            localStorage.setItem('authpro.pass.v1', changes['authpro.pass.v1'].newValue);
+            shouldRefresh = true;
+          } catch {}
+        }
+        if (changes['authpro.vault.v1']?.newValue?.accounts?.length) {
+          try {
+            const currentVault = loadVault();
+            if (!currentVault.accounts || currentVault.accounts.length === 0) {
+              localStorage.setItem('authpro.vault.v1', JSON.stringify(changes['authpro.vault.v1'].newValue));
+              shouldRefresh = true;
+            }
+          } catch {}
+        }
+        if (shouldRefresh) {
+          toast('ক্লাউড সিঙ্ক ডাটা আপডেট হয়েছে ☁️');
+          if (typeof window.authProCtx?.refreshVault === 'function') {
+            window.authProCtx.refreshVault();
+          }
           if (typeof window.authProCtx?.refreshSyncDot === 'function') {
             window.authProCtx.refreshSyncDot();
           }
