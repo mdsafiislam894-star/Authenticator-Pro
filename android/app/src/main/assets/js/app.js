@@ -23,7 +23,8 @@ import { openRecoveryCodesDialog, openGlobalRecoveryVault } from './recovery-cod
 let vault = loadVault();
 const SETTINGS_KEY = 'authpro.settings.v1';
 const settings = {
-  theme: 'auto',
+  theme: 'green-forest',
+  mode: 'dark',
   hideCodes: false,
   autoCopy: true,
   showNextCode: true,
@@ -45,17 +46,20 @@ let deferredInstallPrompt = null;
 let swRegistration = null;
 const revealed = new Map(); // id -> timeout for "hide codes" mode
 
-function isLightTheme(t) {
-  return t === 'crystal-pearl' || t === 'light';
+function resolvedTheme() {
+  if (settings.theme === 'light') return 'crystal-pearl';
+  if (settings.theme === 'dark' || settings.theme === 'auto') return 'green-forest';
+  return settings.theme || 'green-forest';
 }
 
-function resolvedTheme() {
-  if (settings.theme === 'auto') {
-    return matchMedia('(prefers-color-scheme: light)').matches ? 'crystal-pearl' : 'green-forest';
-  }
-  if (settings.theme === 'light') return 'crystal-pearl';
-  if (settings.theme === 'dark') return 'green-forest';
-  return settings.theme;
+function resolvedMode() {
+  if (settings.mode === 'light' || settings.mode === 'dark') return settings.mode;
+  if (settings.theme === 'light' || settings.theme === 'crystal-pearl') return 'light';
+  return 'dark';
+}
+
+function isLightTheme(t) {
+  return resolvedMode() === 'light';
 }
 
 function saveSettings() {
@@ -66,15 +70,25 @@ function saveSettings() {
 
 function applyTheme() {
   const t = resolvedTheme();
+  const m = resolvedMode();
   document.documentElement.dataset.theme = t;
-  const isLight = isLightTheme(t);
+  document.documentElement.dataset.mode = m;
+  const isLight = m === 'light';
   const meta = $('#themeMeta');
-  if (meta) meta.setAttribute('content', isLight ? '#faf7f2' : '#040914');
+  if (meta) meta.setAttribute('content', isLight ? '#f8fafc' : '#021209');
+
+  const toggleBtn = $('#themeToggleBtn');
+  if (toggleBtn) {
+    toggleBtn.textContent = isLight ? '🌙' : '☀️';
+    toggleBtn.title = isLight ? 'ডার্ক মোড চালু করুন (🌙)' : 'লাইট মোড চালু করুন (☀️)';
+  }
+
   const tb = $('#themeBtn');
   if (tb) {
-    tb.textContent = isLight ? '🌙' : '☀️';
-    tb.title = isLight ? 'ডার্ক থিমে যান (চাপুন বা থিম লিস্ট দেখুন)' : 'লাইট থিমে যান (চাপুন বা থিম লিস্ট দেখুন)';
+    tb.textContent = '🎨';
+    tb.title = '🎨 প্রিমিয়াম থিম প্যালেট নির্বাচন';
   }
+
   const pb = $('#privacyBtn');
   if (pb) {
     pb.textContent = settings.hideCodes ? '🙈' : '👁️';
@@ -286,6 +300,7 @@ const ctx = {
   settings,
   saveSettings,
   resolvedTheme: () => resolvedTheme(),
+  resolvedMode: () => resolvedMode(),
   doSync,
   hashPin,
   refreshSyncDot,
@@ -374,9 +389,11 @@ function resetOpenSwipe() {
 }
 
 function cardHtml(a, idx, total) {
-  const title = a.issuer || a.name || 'Unnamed';
-  const sub = a.issuer ? a.name : '';
+  const mainTitle = a.issuer || a.name || 'Unnamed';
+  const subTitle = (a.issuer && a.name && a.name.toLowerCase() !== a.issuer.toLowerCase()) ? a.name : '';
   const isHotp = a.type === 'hotp';
+  const recUnused = a.recoveryCodes?.filter((c) => !c.used).length || 0;
+  const recTotal = a.recoveryCodes?.length || 0;
   return `
   <div class="card-wrap" data-wrap-id="${a.id}">
     <div class="swipe-action swipe-right-action">
@@ -393,21 +410,15 @@ function cardHtml(a, idx, total) {
       ${renderAccountAvatar(a)}
       <div class="info">
         <div class="info-top">
-          <div class="issuer">${a.pinned ? '⭐ ' : ''}${esc(title)}</div>
-          ${sub ? `<div class="name">${esc(sub)}</div>` : ''}
+          <span class="issuer" title="${esc(mainTitle)}">${a.pinned ? '⭐ ' : ''}${esc(mainTitle)}</span>
+          ${subTitle ? `<span class="name" title="${esc(subTitle)}">(${esc(subTitle)})</span>` : ''}
+          ${a.group ? `<span class="tag group-tag">${esc(a.group)}</span>` : ''}
+          ${recTotal > 0 ? `<button class="tag recovery-pill-tag" data-recovery="${a.id}" title="রিকভারি কোড দেখুন">🔐 ${recUnused}/${recTotal}</button>` : ''}
         </div>
         <div class="code-row">
           <div class="code" data-code="${a.id}">······</div>
           ${!isHotp ? `<span class="next-code" data-nextcode="${a.id}"></span>` : ''}
-          <div class="meta">
-            ${a.group ? `<span class="tag">${esc(a.group)}</span>` : ''}
-            ${a.type !== 'totp' ? `<span class="tag">${a.type.toUpperCase()}</span>` : ''}
-            ${a.recoveryCodes && a.recoveryCodes.length ? `
-              <span class="tag recovery-pill-tag" data-recovery="${a.id}" title="রিকভারি কোড দেখুন">
-                🔐 ${a.recoveryCodes.filter((c) => !c.used).length}/${a.recoveryCodes.length} কোড
-              </span>` : ''}
-            <span class="tag copied-tag hidden" data-copied="${a.id}">কপিড ✓</span>
-          </div>
+          <span class="tag copied-tag hidden" data-copied="${a.id}">কপিড ✓</span>
         </div>
       </div>
       <div class="card-side">
@@ -677,25 +688,33 @@ function showLock(force = false) {
   if (!force && settings.autoLockMs > 0 && lastHiddenAt && (Date.now() - lastHiddenAt) < settings.autoLockMs) {
     return;
   }
-  $('#lock').classList.remove('hidden');
-  $('#lockMsg').textContent = 'PIN দিন';
-  $('#lockPin').value = '';
-  $('#bioBtn').classList.toggle('hidden', !settings.bioCredId);
-  $('#lockPin').focus();
+  $('#lock')?.classList.remove('hidden');
+  const lockMsg = $('#lockMsg');
+  if (lockMsg) lockMsg.textContent = 'PIN দিন';
+  const lockPin = $('#lockPin');
+  if (lockPin) { lockPin.value = ''; lockPin.focus(); }
+  $('#bioBtn')?.classList.toggle('hidden', !settings.bioCredId);
 }
 
 async function tryUnlock() {
-  const h = await hashPin($('#lockPin').value);
-  if (h === settings.pinHash) { $('#lock').classList.add('hidden'); } else {
-    $('#lockMsg').textContent = 'ভুল PIN'; $('#lockPin').value = '';
+  const pinVal = $('#lockPin')?.value || '';
+  const h = await hashPin(pinVal);
+  if (h === settings.pinHash) {
+    $('#lock')?.classList.add('hidden');
+  } else {
+    const lockMsg = $('#lockMsg');
+    if (lockMsg) lockMsg.textContent = 'ভুল PIN';
+    const lockPin = $('#lockPin');
+    if (lockPin) lockPin.value = '';
   }
 }
 
 async function tryBiometricUnlock() {
   try {
-    if (await verifyBiometric()) $('#lock').classList.add('hidden');
+    if (await verifyBiometric()) $('#lock')?.classList.add('hidden');
   } catch {
-    $('#lockMsg').textContent = 'বায়োমেট্রিক বাতিল হয়েছে — PIN দিন';
+    const lockMsg = $('#lockMsg');
+    if (lockMsg) lockMsg.textContent = 'বায়োমেট্রিক বাতিল হয়েছে — PIN দিন';
   }
 }
 
@@ -704,33 +723,27 @@ const fab = $('#fab');
 if (fab) fab.onclick = () => openAddMenu(ctx);
 const menuBtn = $('#menuBtn');
 if (menuBtn) menuBtn.onclick = () => openMenu(ctx);
+
+// Quick Dark / Light mode toggle button
+const themeToggleBtn = $('#themeToggleBtn');
+if (themeToggleBtn) {
+  themeToggleBtn.onclick = () => {
+    const cur = resolvedMode();
+    settings.mode = cur === 'light' ? 'dark' : 'light';
+    playDropletSound(settings);
+    haptic('light');
+    saveSettings();
+    toast(settings.mode === 'light' ? '☀️ লাইট মোড চালু হয়েছে' : '🌙 ডার্ক মোড চালু হয়েছে');
+  };
+}
+
+// Theme palette modal button
 const themeBtn = $('#themeBtn');
 if (themeBtn) {
-  let pressTimer = null;
-  themeBtn.addEventListener('pointerdown', () => {
-    pressTimer = setTimeout(() => {
-      pressTimer = null;
-      openThemePicker(ctx);
-    }, 450);
-  });
-  themeBtn.addEventListener('pointerup', () => {
-    if (pressTimer) {
-      clearTimeout(pressTimer);
-      pressTimer = null;
-      const current = resolvedTheme();
-      settings.theme = isLightTheme(current) ? 'nordic-aurora' : 'liquid-champagne';
-      playDropletSound(settings);
-      haptic('light');
-      saveSettings();
-    }
-  });
-  themeBtn.addEventListener('pointercancel', () => {
-    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
-  });
-  themeBtn.addEventListener('contextmenu', (e) => {
+  themeBtn.onclick = (e) => {
     e.preventDefault();
     openThemePicker(ctx);
-  });
+  };
 }
 const syncBtn = $('#syncBtn');
 if (syncBtn) syncBtn.onclick = () => openSync(ctx);

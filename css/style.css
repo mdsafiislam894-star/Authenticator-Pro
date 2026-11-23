@@ -368,15 +368,6 @@
   box-shadow: 0 10px 30px rgba(2, 20, 11, 0.55), inset 0 0 14px rgba(16, 185, 129, 0.12);
   background: linear-gradient(135deg, rgba(6, 78, 59, 0.28), rgba(2, 35, 18, 0.4));
 }
-:root[data-theme="green-forest"] .card::before {
-  content: "🌿";
-  position: absolute;
-  right: 14px;
-  top: 10px;
-  font-size: 13px;
-  opacity: 0.65;
-  filter: drop-shadow(0 0 4px #10b981);
-}
 
 /* 2. Blue Sea: Water ripples, bubbles & Golden Beach Sand at bottom */
 :root[data-theme="blue-sea"] .theme-ambience::before {
@@ -413,15 +404,6 @@
   box-shadow: 0 10px 30px rgba(2, 18, 38, 0.6), inset 0 0 16px rgba(6, 182, 212, 0.15);
   background: linear-gradient(135deg, rgba(6, 182, 212, 0.18), rgba(2, 25, 55, 0.4));
 }
-:root[data-theme="blue-sea"] .card::before {
-  content: "🌊";
-  position: absolute;
-  right: 14px;
-  top: 10px;
-  font-size: 12px;
-  opacity: 0.6;
-  filter: drop-shadow(0 0 5px #06b6d4);
-}
 
 /* 3. Sakura Blossom: Falling Pink Petals & Rose Quartz */
 :root[data-theme="sakura-blossom"] .theme-ambience::after {
@@ -448,15 +430,6 @@
   box-shadow: 0 10px 30px rgba(28, 4, 24, 0.6), inset 0 0 14px rgba(244, 114, 182, 0.14);
   background: linear-gradient(135deg, rgba(131, 24, 67, 0.25), rgba(74, 4, 78, 0.35));
 }
-:root[data-theme="sakura-blossom"] .card::before {
-  content: "🌸";
-  position: absolute;
-  right: 14px;
-  top: 10px;
-  font-size: 12px;
-  opacity: 0.7;
-  filter: drop-shadow(0 0 6px #f472b6);
-}
 
 /* 4. Vampire Blood Red: Pulsing Crimson Bloodlines & Smoked Obsidian */
 :root[data-theme="vampire-blood"] .card {
@@ -468,15 +441,6 @@
 @keyframes vampireBloodGlow {
   0% { border-color: rgba(239, 68, 68, 0.35); box-shadow: 0 10px 30px rgba(30, 2, 8, 0.7), inset 0 0 12px rgba(239, 68, 68, 0.12); }
   100% { border-color: rgba(244, 63, 94, 0.6); box-shadow: 0 10px 35px rgba(80, 5, 15, 0.8), inset 0 0 20px rgba(239, 68, 68, 0.25); }
-}
-:root[data-theme="vampire-blood"] .card::before {
-  content: "🩸";
-  position: absolute;
-  right: 14px;
-  top: 10px;
-  font-size: 12px;
-  opacity: 0.75;
-  filter: drop-shadow(0 0 6px #ef4444);
 }
 
 /* 5. Halloween Orange: Jack-o'-Lantern Pumpkin Neon & Haunted Twilight */
@@ -504,30 +468,12 @@
   box-shadow: 0 10px 35px rgba(25, 6, 40, 0.7), inset 0 0 15px rgba(249, 115, 22, 0.16);
   background: linear-gradient(135deg, rgba(124, 45, 18, 0.28), rgba(30, 8, 55, 0.45));
 }
-:root[data-theme="halloween-orange"] .card::before {
-  content: "🎃";
-  position: absolute;
-  right: 14px;
-  top: 10px;
-  font-size: 13px;
-  opacity: 0.8;
-  filter: drop-shadow(0 0 6px #f97316);
-}
 
 /* 6. Cyber Matrix: High-Tech Phosphor Green Grid */
 :root[data-theme="cyber-matrix"] .card {
   border: 1px solid rgba(34, 197, 94, 0.45);
   box-shadow: 0 10px 30px rgba(2, 20, 8, 0.7), inset 0 0 15px rgba(34, 197, 94, 0.16);
   background: linear-gradient(135deg, rgba(20, 83, 45, 0.28), rgba(2, 15, 6, 0.6));
-}
-:root[data-theme="cyber-matrix"] .card::before {
-  content: "⚡";
-  position: absolute;
-  right: 14px;
-  top: 10px;
-  font-size: 12px;
-  opacity: 0.75;
-  filter: drop-shadow(0 0 6px #22c55e);
 }
 
 /* 7. Celestial Nebula: Stardust & Royal Space Galaxy */
@@ -536,15 +482,6 @@
   box-shadow: 0 10px 35px rgba(15, 3, 35, 0.7), inset 0 0 16px rgba(168, 85, 247, 0.16);
   background: linear-gradient(135deg, rgba(76, 29, 149, 0.28), rgba(10, 2, 25, 0.55));
 }
-:root[data-theme="celestial-nebula"] .card::before {
-  content: "✨";
-  position: absolute;
-  right: 14px;
-  top: 10px;
-  font-size: 12px;
-  opacity: 0.75;
-  filter: drop-shadow(0 0 6px #a855f7);
-}
 
 /* 8. Crystal Pearl: Pure Diamond Daylight */
 :root[data-theme="crystal-pearl"] .card {
@@ -552,13 +489,186 @@
   box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95);
   background: rgba(255, 255, 255, 0.82);
 }
-:root[data-theme="crystal-pearl"] .card::before {
-  content: "💎";
-  position: absolute;
-  right: 14px;
-  top: 10px;
-  font-size: 12px;
-  opacity: 0.55;
+
+/* ==============================================================
+   DUAL MODE (DARK & LIGHT) UNIVERSAL & PER-THEME SYSTEM
+   ============================================================== */
+
+/* Universal Light Mode defaults */
+:root[data-mode="light"] {
+  color-scheme: light;
+  --bg: #f8fafc;
+  --bg-grad:
+    radial-gradient(1100px 800px at 10% -10%, #e2e8f0 0%, transparent 60%),
+    radial-gradient(900px 700px at 100% 5%, #dbeafe 0%, transparent 55%),
+    radial-gradient(900px 900px at 50% 115%, #f1f5f9 0%, transparent 60%), #f8fafc;
+  --orb-opacity: .42;
+  --text: #0f172a;
+  --muted: rgba(15, 23, 42, .68);
+  --card: rgba(255, 255, 255, .84);
+  --card2: rgba(241, 245, 249, .92);
+  --card-hover: rgba(255, 255, 255, .96);
+  --card-shadow: 0 4px 16px rgba(15, 23, 42, .06), 0 1px 3px rgba(15, 23, 42, .04);
+  --line: rgba(15, 23, 42, .12);
+  --edge: rgba(15, 23, 42, .16);
+  --hi: rgba(255, 255, 255, .98);
+  --rim-low: rgba(0, 0, 0, .06);
+  --sheen: rgba(255, 255, 255, .82);
+  --code: #0f172a;
+  --code-glow: transparent;
+  --shadow: 0 16px 40px rgba(15, 23, 42, .1);
+  --sheet-bg: linear-gradient(160deg, rgba(255, 255, 255, .97), rgba(241, 245, 249, .94));
+  --toast-bg: linear-gradient(160deg, rgba(255, 255, 255, .98), rgba(226, 232, 240, .95));
+  --option-bg: #ffffff;
+  --google-bg: linear-gradient(155deg, #ffffff, #f1f5f9);
+  --google-text: #0f172a;
+  --ripple-core: rgba(15, 23, 42, .08);
+  --ripple-ring: rgba(255, 255, 255, .95);
+  --pill-bg: rgba(226, 232, 240, .75);
+}
+
+:root[data-mode="light"] .card {
+  background: rgba(255, 255, 255, 0.85) !important;
+  border: 1px solid var(--edge) !important;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+}
+
+/* 1. Green Forest Light Mode */
+:root[data-theme="green-forest"][data-mode="light"] {
+  --bg: #f0fdf4;
+  --bg-grad:
+    radial-gradient(1100px 800px at 10% -10%, #d1fae5 0%, transparent 60%),
+    radial-gradient(900px 700px at 100% 5%, #a7f3d0 0%, transparent 55%),
+    radial-gradient(900px 900px at 50% 115%, #ecfdf5 0%, transparent 60%), #f0fdf4;
+  --accent: #059669;
+  --accent2: #10b981;
+  --edge: rgba(16, 185, 129, 0.28);
+  --line: rgba(16, 185, 129, 0.2);
+  --code: #047857;
+  --code-glow: rgba(5, 150, 105, 0.2);
+}
+
+/* 2. Blue Sea Light Mode */
+:root[data-theme="blue-sea"][data-mode="light"] {
+  --bg: #f0f9ff;
+  --bg-grad:
+    radial-gradient(1100px 800px at 10% -10%, #bae6fd 0%, transparent 60%),
+    radial-gradient(900px 700px at 100% 5%, #e0f2fe 0%, transparent 55%),
+    radial-gradient(900px 900px at 50% 115%, #fef3c7 0%, transparent 60%), #f0f9ff;
+  --accent: #0284c7;
+  --accent2: #f59e0b;
+  --edge: rgba(2, 132, 199, 0.28);
+  --line: rgba(2, 132, 199, 0.2);
+  --code: #0369a1;
+  --code-glow: rgba(3, 105, 161, 0.2);
+}
+
+/* 3. Sakura Blossom Light Mode */
+:root[data-theme="sakura-blossom"][data-mode="light"] {
+  --bg: #fdf2f8;
+  --bg-grad:
+    radial-gradient(1100px 800px at 10% -10%, #fce7f3 0%, transparent 60%),
+    radial-gradient(900px 700px at 100% 5%, #fbcfe8 0%, transparent 55%),
+    radial-gradient(900px 900px at 50% 115%, #fff1f2 0%, transparent 60%), #fdf2f8;
+  --accent: #db2777;
+  --accent2: #f472b6;
+  --edge: rgba(219, 39, 119, 0.28);
+  --line: rgba(219, 39, 119, 0.2);
+  --code: #be185d;
+  --code-glow: rgba(190, 24, 93, 0.2);
+}
+
+/* 4. Vampire Blood Light Mode */
+:root[data-theme="vampire-blood"][data-mode="light"] {
+  --bg: #fff1f2;
+  --bg-grad:
+    radial-gradient(1100px 800px at 10% -10%, #ffe4e6 0%, transparent 60%),
+    radial-gradient(900px 700px at 100% 5%, #fecdd3 0%, transparent 55%),
+    radial-gradient(900px 900px at 50% 115%, #fff1f2 0%, transparent 60%), #fff1f2;
+  --accent: #dc2626;
+  --accent2: #ef4444;
+  --edge: rgba(220, 38, 38, 0.28);
+  --line: rgba(220, 38, 38, 0.2);
+  --code: #b91c1c;
+  --code-glow: rgba(185, 28, 28, 0.2);
+}
+
+/* 5. Halloween Orange Light Mode */
+:root[data-theme="halloween-orange"][data-mode="light"] {
+  --bg: #fff7ed;
+  --bg-grad:
+    radial-gradient(1100px 800px at 10% -10%, #ffedd5 0%, transparent 60%),
+    radial-gradient(900px 700px at 100% 5%, #fed7aa 0%, transparent 55%),
+    radial-gradient(900px 900px at 50% 115%, #f3e8ff 0%, transparent 60%), #fff7ed;
+  --accent: #ea580c;
+  --accent2: #9333ea;
+  --edge: rgba(234, 88, 12, 0.28);
+  --line: rgba(234, 88, 12, 0.2);
+  --code: #c2410c;
+  --code-glow: rgba(194, 65, 12, 0.2);
+}
+
+/* 6. Cyber Matrix Light Mode */
+:root[data-theme="cyber-matrix"][data-mode="light"] {
+  --bg: #f0fdf4;
+  --bg-grad:
+    radial-gradient(1100px 800px at 10% -10%, #dcfce7 0%, transparent 60%),
+    radial-gradient(900px 700px at 100% 5%, #bbf7d0 0%, transparent 55%),
+    radial-gradient(900px 900px at 50% 115%, #f0fdf4 0%, transparent 60%), #f0fdf4;
+  --accent: #16a34a;
+  --accent2: #22c55e;
+  --edge: rgba(22, 163, 74, 0.28);
+  --line: rgba(22, 163, 74, 0.2);
+  --code: #15803d;
+  --code-glow: rgba(21, 128, 61, 0.2);
+}
+
+/* 7. Celestial Nebula Light Mode */
+:root[data-theme="celestial-nebula"][data-mode="light"] {
+  --bg: #faf5ff;
+  --bg-grad:
+    radial-gradient(1100px 800px at 10% -10%, #f3e8ff 0%, transparent 60%),
+    radial-gradient(900px 700px at 100% 5%, #e9d5ff 0%, transparent 55%),
+    radial-gradient(900px 900px at 50% 115%, #e0f2fe 0%, transparent 60%), #faf5ff;
+  --accent: #9333ea;
+  --accent2: #0284c7;
+  --edge: rgba(147, 51, 234, 0.28);
+  --line: rgba(147, 51, 234, 0.2);
+  --code: #7e22ce;
+  --code-glow: rgba(126, 34, 206, 0.2);
+}
+
+/* 8. Crystal Pearl Dark Mode Override */
+:root[data-theme="crystal-pearl"][data-mode="dark"] {
+  color-scheme: dark;
+  --bg: #090d16;
+  --bg-grad:
+    radial-gradient(1100px 800px at 10% -10%, #1e293b 0%, transparent 60%),
+    radial-gradient(900px 700px at 100% 5%, #0f172a 0%, transparent 55%),
+    radial-gradient(900px 900px at 50% 115%, #0284c7 0%, transparent 60%), #090d16;
+  --orb-opacity: .75;
+  --orb1: #38bdf8; --orb2: #60a5fa; --orb3: #818cf8; --orb4: #0284c7;
+  --text: #f8fafc;
+  --muted: rgba(248, 250, 252, .65);
+  --card: rgba(30, 41, 59, .35);
+  --card2: rgba(30, 41, 59, .55);
+  --card-hover: rgba(30, 41, 59, .45);
+  --line: rgba(56, 189, 248, .25);
+  --edge: rgba(56, 189, 248, .4);
+  --hi: rgba(255, 255, 255, .6);
+  --rim-low: rgba(56, 189, 248, .15);
+  --sheen: rgba(56, 189, 248, .2);
+  --accent: #38bdf8;
+  --accent2: #60a5fa;
+  --code: #ffffff;
+  --code-glow: rgba(56, 189, 248, .75);
+  --shadow: 0 18px 50px rgba(0, 0, 0, .6);
+  --card-shadow: 0 10px 30px rgba(0, 0, 0, .4);
+  --sheet-bg: linear-gradient(160deg, rgba(15, 23, 42, .92), rgba(9, 13, 22, .95));
+  --toast-bg: linear-gradient(160deg, rgba(30, 41, 59, .94), rgba(15, 23, 42, .96));
+  --option-bg: #0f172a;
+  --google-bg: linear-gradient(155deg, #f8fafc, #e2e8f0);
+  --google-text: #0f172a;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }

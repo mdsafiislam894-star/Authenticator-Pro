@@ -95,10 +95,20 @@ export const THEMES = [
 export function openThemePicker(ctx) {
   const current = ctx.settings.theme;
   const resolved = ctx.resolvedTheme();
+  const currentMode = (ctx.resolvedMode ? ctx.resolvedMode() : ctx.settings.mode) || 'dark';
 
   const m = openModal(`
     <h3>🎨 প্রিমিয়াম থিম ও লিকুইড স্টাইল</h3>
     <p class="hint">প্রতিটি থিমের রয়েছে সম্পূর্ণ ভিন্ন লাক্সারি ভাইব, কাঁচের স্বচ্ছতা এবং রিফ্লেক্টিভ অরবস।</p>
+    
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;margin:8px 0 14px;background:var(--card);border-radius:12px;border:1px solid var(--edge);">
+      <span style="font-size:12px;font-weight:700;">মোড নির্বাচন:</span>
+      <div style="display:flex;gap:6px;">
+        <button id="modalDarkBtn" class="btn mini ${currentMode === 'dark' ? 'primary' : 'secondary'}" style="padding:4px 10px;font-size:11.5px;">🌙 ডার্ক মোড</button>
+        <button id="modalLightBtn" class="btn mini ${currentMode === 'light' ? 'primary' : 'secondary'}" style="padding:4px 10px;font-size:11.5px;">☀️ লাইট মোড</button>
+      </div>
+    </div>
+
     <div class="theme-grid">
       ${THEMES.map((t) => {
         const isCurrent = current === t.id || (current === 'auto' && resolved === t.id) || (current === t.mode && (t.id === 'green-forest' || t.id === 'crystal-pearl'));
@@ -119,6 +129,29 @@ export function openThemePicker(ctx) {
       }).join('')}
     </div>
   `);
+
+  const darkBtn = m.el.querySelector('#modalDarkBtn');
+  const lightBtn = m.el.querySelector('#modalLightBtn');
+  if (darkBtn) {
+    darkBtn.onclick = () => {
+      ctx.settings.mode = 'dark';
+      ctx.saveSettings();
+      playDropletSound(ctx.settings);
+      haptic('light');
+      m.close();
+      openThemePicker(ctx);
+    };
+  }
+  if (lightBtn) {
+    lightBtn.onclick = () => {
+      ctx.settings.mode = 'light';
+      ctx.saveSettings();
+      playDropletSound(ctx.settings);
+      haptic('light');
+      m.close();
+      openThemePicker(ctx);
+    };
+  }
 
   m.el.querySelectorAll('[data-theme-id]').forEach((card) => {
     card.onclick = () => {
