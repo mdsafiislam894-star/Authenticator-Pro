@@ -38,6 +38,13 @@
     "identity",
     "tabs"
   ],
+  "content_scripts": [
+    {
+      "matches": ["https://*/*", "http://*/*"],
+      "js": ["js/content-autofill.js"],
+      "run_at": "document_idle"
+    }
+  ],
   "externally_connectable": {
     "matches": [
       "https://mdsafiislam894-star.github.io/*",

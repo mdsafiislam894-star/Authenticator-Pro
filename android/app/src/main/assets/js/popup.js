@@ -51,8 +51,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initial sync & hydrate from chrome.storage.local
   if (typeof chrome !== 'undefined' && chrome.storage?.local) {
-    chrome.storage.local.get(['authpro.google.v1', 'authpro.pass.v1', 'authpro.vault.v1'], (items) => {
+    chrome.storage.local.get(['authpro.google.v1', 'authpro.pass.v1', 'authpro.vault.v1', 'authpro.settings.v1'], (items) => {
       let updated = false;
+      if (items['authpro.settings.v1']) {
+        try {
+          const savedSettings = items['authpro.settings.v1'];
+          const curSettings = JSON.parse(localStorage.getItem('authpro.settings.v1') || '{}');
+          const merged = { ...curSettings, ...savedSettings };
+          localStorage.setItem('authpro.settings.v1', JSON.stringify(merged));
+          if (window.authProCtx?.applyTheme) window.authProCtx.applyTheme();
+        } catch {}
+      }
       if (items['authpro.google.v1'] && !localStorage.getItem('authpro.google.v1')) {
         try {
           localStorage.setItem('authpro.google.v1', JSON.stringify(items['authpro.google.v1']));

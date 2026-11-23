@@ -64,6 +64,9 @@ function isLightTheme(t) {
 
 function saveSettings() {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+    try { chrome.storage.local.set({ [SETTINGS_KEY]: settings }); } catch {}
+  }
   applyTheme();
   render();
 }
@@ -299,6 +302,7 @@ const ctx = {
   render: () => render(),
   settings,
   saveSettings,
+  applyTheme: () => applyTheme(),
   resolvedTheme: () => resolvedTheme(),
   resolvedMode: () => resolvedMode(),
   doSync,
