@@ -389,8 +389,25 @@ function resetOpenSwipe() {
 }
 
 function cardHtml(a, idx, total) {
-  const mainTitle = a.issuer || a.name || 'Unnamed';
-  const subTitle = (a.issuer && a.name && a.name.toLowerCase() !== a.issuer.toLowerCase()) ? a.name : '';
+  let issuer = a.issuer || '';
+  let name = a.name || '';
+  let mainTitle = '';
+  let subTitle = '';
+
+  if (issuer && name) {
+    if (name.toLowerCase().startsWith(issuer.toLowerCase() + ':')) {
+      name = name.slice(issuer.length + 1).trim();
+    }
+    if (issuer.toLowerCase() === name.toLowerCase()) {
+      mainTitle = issuer;
+    } else {
+      mainTitle = issuer;
+      subTitle = name;
+    }
+  } else {
+    mainTitle = issuer || name || 'Unnamed';
+  }
+
   const isHotp = a.type === 'hotp';
   const recUnused = a.recoveryCodes?.filter((c) => !c.used).length || 0;
   const recTotal = a.recoveryCodes?.length || 0;
@@ -410,14 +427,13 @@ function cardHtml(a, idx, total) {
       ${renderAccountAvatar(a)}
       <div class="info">
         <div class="info-top">
-          <span class="issuer" title="${esc(mainTitle)}">${a.pinned ? '⭐ ' : ''}${esc(mainTitle)}</span>
-          ${subTitle ? `<span class="name" title="${esc(subTitle)}">(${esc(subTitle)})</span>` : ''}
-          ${a.group ? `<span class="tag group-tag">${esc(a.group)}</span>` : ''}
+          <span class="issuer" title="${esc(mainTitle)}${subTitle ? ' (' + esc(subTitle) + ')' : ''}">
+            ${a.pinned ? '⭐ ' : ''}<b>${esc(mainTitle)}</b>${subTitle ? `<span class="name"> (${esc(subTitle)})</span>` : ''}
+          </span>
           ${recTotal > 0 ? `<button class="tag recovery-pill-tag" data-recovery="${a.id}" title="রিকভারি কোড দেখুন">🔐 ${recUnused}/${recTotal}</button>` : ''}
         </div>
         <div class="code-row">
           <div class="code" data-code="${a.id}">······</div>
-          ${!isHotp ? `<span class="next-code" data-nextcode="${a.id}"></span>` : ''}
           <span class="tag copied-tag hidden" data-copied="${a.id}">কপিড ✓</span>
         </div>
       </div>
